@@ -1,0 +1,1597 @@
+import 'package:flutter/material.dart';
+import 'package:file_picker/file_picker.dart';
+import 'package:csv/csv.dart';
+import 'package:flutter_animate/flutter_animate.dart';
+import 'package:google_fonts/google_fonts.dart';
+import 'dart:math' as math;
+import 'dart:ui';
+import '../models/bias_detector.dart';
+import 'analysis_screen.dart';
+import 'history_screen.dart';
+import 'compare_screen.dart';
+import 'face_bias_screen.dart';
+import 'gov_dashboard_screen.dart';
+import 'text_bias_screen.dart';
+import 'simulator_screen.dart';
+import 'feature_detail_screen.dart';
+import 'global_compliance_screen.dart';
+import '../services/auth_service.dart';
+import 'login_screen.dart';
+
+class HomeScreen extends StatefulWidget {
+  const HomeScreen({super.key});
+  @override
+  State<HomeScreen> createState() => _HomeScreenState();
+}
+
+class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
+  bool _isLoading = false;
+  String? _error;
+  late AnimationController _pulseController;
+  late AnimationController _floatController;
+  late AnimationController _orbitController;
+
+  @override
+  void initState() {
+    super.initState();
+    _pulseController = AnimationController(
+      vsync: this, duration: const Duration(seconds: 3),
+    )..repeat(reverse: true);
+    _floatController = AnimationController(
+      vsync: this, duration: const Duration(seconds: 4),
+    )..repeat(reverse: true);
+    _orbitController = AnimationController(
+      vsync: this, duration: const Duration(seconds: 20),
+    )..repeat();
+  }
+
+  @override
+  void dispose() {
+    _pulseController.dispose();
+    _floatController.dispose();
+    _orbitController.dispose();
+    super.dispose();
+  }
+
+  // ── EXACT SAME LOGIC ────────────────────────────────────────
+  Future<void> _pickAndAnalyze() async {
+    setState(() {
+      _isLoading = true;
+      _error = null;
+    });
+
+    try {
+      final result = await FilePicker.platform.pickFiles(
+        type: FileType.custom,
+        allowedExtensions: ['csv'],
+        withData: true,
+      );
+
+      if (result == null) {
+        setState(() => _isLoading = false);
+        return;
+      }
+
+      final file = result.files.first;
+
+    // 🔥 FIXED CSV PARSING
+      final csvString = String.fromCharCodes(file.bytes!);
+
+      final cleanedCsv = csvString
+          .replaceAll('\r\n', '\n')
+          .replaceAll('\r', '\n');
+
+      final rows = const CsvToListConverter(
+        fieldDelimiter: ',',
+        eol: '\n',
+      ).convert(cleanedCsv);
+
+      print("RAW CSV:");
+      print(cleanedCsv);
+
+      print("ROWS LENGTH: ${rows.length}");
+      print("FIRST ROW: ${rows.isNotEmpty ? rows[0] : 'EMPTY'}");
+
+      // 🔥 REMOVE EMPTY ROWS
+      final validRows = rows.where((r) => r.isNotEmpty).toList();
+
+      // 🔥 DEBUG (optional)
+      print("Parsed valid rows: ${validRows.length}");
+
+      if (validRows.length < 2) {
+        throw Exception('CSV needs at least 2 valid rows');
+      }
+
+      final headers = validRows.first.map((e) => e.toString()).toList();
+
+      final data = validRows.skip(1).map((row) {
+        final map = <String, dynamic>{};
+        for (int i = 0; i < headers.length; i++) {
+          map[headers[i]] = i < row.length ? row[i].toString() : '';
+        }
+        return map;
+      }).toList();
+
+      final analysisResult = BiasDetector.analyze(data, headers);
+
+      if (!mounted) return;
+
+        if (analysisResult.overallBiasScore > 50) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Row(
+                children: const [
+                  Icon(Icons.warning_amber_rounded, color: Colors.white),
+                  SizedBox(width: 12),
+                  Expanded(
+                    child: Text(
+                      '⚠️ High risk dataset detected!',
+                      style: TextStyle(
+                        color: Colors.white,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+              backgroundColor: const Color(0xFFEF4444),
+              behavior: SnackBarBehavior.floating,
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(12),
+              ),
+              margin: const EdgeInsets.all(16),
+            ),
+          );
+      }
+
+      Navigator.push(
+        context,
+        PageRouteBuilder(
+          pageBuilder: (_, a, b) => AnalysisScreen(
+            result: analysisResult,
+            rawData: data
+                .map((e) => e.map((k, v) => MapEntry(k, v.toString())))
+                .toList(),
+          ),
+          transitionsBuilder: (_, a, b, child) =>
+              FadeTransition(opacity: a, child: child),
+          transitionDuration: const Duration(milliseconds: 400),
+        ),
+      );
+    } catch (e) {
+      setState(() => _error = e.toString());
+    } finally {
+      setState(() => _isLoading = false);
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final w = MediaQuery.of(context).size.width;
+    return Scaffold(
+      backgroundColor: const Color(0xFF04040C),
+      body: Stack(children: [
+        // Animated grid
+        Positioned.fill(child: CustomPaint(painter: _GridPainter())),
+
+        // Orbiting glow blobs
+        AnimatedBuilder(animation: _orbitController, builder: (_, __) {
+          final angle = _orbitController.value * 2 * math.pi;
+          return Stack(children: [
+            Positioned(
+              left: w * 0.5 + math.cos(angle) * 180 - 200,
+              top: -100 + math.sin(angle * 0.7) * 60,
+              child: _glowBlob(const Color(0xFF6366F1), 400),
+            ),
+            Positioned(
+              right: -80 + math.cos(angle + math.pi) * 80,
+              bottom: -60 + math.sin(angle * 0.5) * 40,
+              child: _glowBlob(const Color(0xFF8B5CF6), 350),
+            ),
+            Positioned(
+              left: w * 0.7 + math.sin(angle * 1.3) * 60,
+              top: 200 + math.cos(angle * 0.8) * 80,
+              child: _glowBlob(const Color(0xFF06B6D4), 180),
+            ),
+          ]);
+        }),
+
+        SafeArea(child: SingleChildScrollView(
+          child: Column(children: [
+            _buildNav(),
+            Padding(
+              padding: EdgeInsets.symmetric(horizontal: w > 900 ? 80 : 24),
+              child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                const SizedBox(height: 52),
+                _buildHero(),
+                const SizedBox(height: 56),
+                _buildUploadCard(),
+                if (_error != null) _buildError(),
+                const SizedBox(height: 64),
+                _buildStatsRow(),
+                const SizedBox(height: 64),
+                _buildFeatureGrid(),
+                const SizedBox(height: 64),
+                _buildHowItWorks(),
+                const SizedBox(height: 64),
+                _buildLiveTicker(),
+                const SizedBox(height: 64),
+                _buildSampleDatasets(),
+                const SizedBox(height: 64),
+                _buildApiBlock(),
+                const SizedBox(height: 64),
+                _buildFooter(),
+                const SizedBox(height: 40),
+              ]),
+            ),
+          ]),
+        )),
+        
+        // 🤖 AGENTIC AUDITOR FLOATING CHAT
+        _buildAgenticAuditor(),
+      ]),
+    );
+  }
+
+  // ── NAV ─────────────────────────────────────────────────────
+  Widget _buildNav() {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 14),
+      decoration: BoxDecoration(
+        color: const Color(0xFF04040C).withValues(alpha: 0.8),
+        border: Border(bottom: BorderSide(color: Colors.white.withValues(alpha: 0.06))),
+      ),
+      child: ClipRect(
+        child: BackdropFilter(
+          filter: ImageFilter.blur(sigmaX: 20, sigmaY: 20),
+          child: Row(children: [
+            // Logo
+            Container(
+              width: 36, height: 36,
+              decoration: BoxDecoration(
+                gradient: const LinearGradient(
+                  colors: [Color(0xFF6366F1), Color(0xFF8B5CF6)],
+                  begin: Alignment.topLeft, end: Alignment.bottomRight,
+                ),
+                borderRadius: BorderRadius.circular(10),
+                boxShadow: [BoxShadow(
+                  color: const Color(0xFF6366F1).withValues(alpha: 0.5),
+                  blurRadius: 16, spreadRadius: 1,
+                )],
+              ),
+              child: const Icon(Icons.lens_blur_rounded, color: Colors.white, size: 20),
+            ),
+            const SizedBox(width: 10),
+            Text('FairLens', style: GoogleFonts.spaceGrotesk(
+              color: Colors.white, fontSize: 18, fontWeight: FontWeight.w800)),
+            // Live badge
+            const SizedBox(width: 10),
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+              decoration: BoxDecoration(
+                color: const Color(0xFF10B981).withValues(alpha: 0.12),
+                borderRadius: BorderRadius.circular(20),
+                border: Border.all(color: const Color(0xFF10B981).withValues(alpha: 0.3)),
+              ),
+              child: Row(mainAxisSize: MainAxisSize.min, children: [
+                _pulseDot(const Color(0xFF10B981)),
+                const SizedBox(width: 5),
+                Text('LIVE', style: GoogleFonts.spaceGrotesk(
+                  color: const Color(0xFF10B981), fontSize: 10, fontWeight: FontWeight.w700,
+                  letterSpacing: 1)),
+              ]),
+            ),
+            const Spacer(),
+            _navBtn('Gov Dashboard', Icons.account_balance_rounded,
+              () => Navigator.push(context, MaterialPageRoute(builder: (_) => const GovDashboardScreen()))),
+            _navBtn('Text Bias', Icons.document_scanner,
+              () => Navigator.push(context, MaterialPageRoute(builder: (_) => const TextBiasScreen()))),
+            _navBtn('Simulator', Icons.tune_rounded,
+              () => Navigator.push(context, MaterialPageRoute(builder: (_) => const SimulatorScreen()))),
+            _navBtn('Face Bias', Icons.face_retouching_natural,
+              () => Navigator.push(context, MaterialPageRoute(builder: (_) => const FaceBiasScreen()))),
+            _navBtn('Roadmap', Icons.public_rounded,
+              () => Navigator.push(context, MaterialPageRoute(builder: (_) => const GlobalComplianceScreen()))),
+            const SizedBox(width: 8),
+            IconButton(
+              icon: const Icon(Icons.logout_rounded, color: Colors.white54, size: 20),
+              onPressed: () async {
+                await AuthService().signOut();
+              },
+              tooltip: 'Sign Out',
+            ),
+            const SizedBox(width: 14),
+            _glowButton('Upload Dataset', Icons.upload_rounded, _pickAndAnalyze),
+          ]),
+        ),
+      ),
+    ).animate().fadeIn(duration: 500.ms);
+  }
+
+  Widget _navBtn(String label, IconData icon, VoidCallback onTap) =>
+    GestureDetector(
+      onTap: onTap,
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 9),
+        decoration: BoxDecoration(
+          color: Colors.white.withValues(alpha: 0.04),
+          borderRadius: BorderRadius.circular(9),
+          border: Border.all(color: Colors.white.withValues(alpha: 0.08)),
+        ),
+        child: Row(mainAxisSize: MainAxisSize.min, children: [
+          Icon(icon, size: 14, color: Colors.white54),
+          const SizedBox(width: 6),
+          Text(label, style: GoogleFonts.spaceGrotesk(color: Colors.white54, fontSize: 13)),
+        ]),
+      ),
+    );
+
+  Widget _glowButton(String label, IconData icon, VoidCallback onTap) =>
+    GestureDetector(
+      onTap: onTap,
+      child: AnimatedBuilder(
+        animation: _pulseController,
+        builder: (_, __) => Container(
+          padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
+          decoration: BoxDecoration(
+            gradient: const LinearGradient(
+              colors: [Color(0xFF6366F1), Color(0xFF8B5CF6)]),
+            borderRadius: BorderRadius.circular(10),
+            boxShadow: [BoxShadow(
+              color: const Color(0xFF6366F1).withValues(
+                alpha: 0.3 + 0.2 * _pulseController.value),
+              blurRadius: 20 + 10 * _pulseController.value,
+              offset: const Offset(0, 4),
+            )],
+          ),
+          child: Row(mainAxisSize: MainAxisSize.min, children: [
+            Icon(icon, size: 15, color: Colors.white),
+            const SizedBox(width: 7),
+            Text(label, style: GoogleFonts.spaceGrotesk(
+              color: Colors.white, fontSize: 13, fontWeight: FontWeight.w700)),
+          ]),
+        ),
+      ),
+    );
+
+  // ── HERO ─────────────────────────────────────────────────────
+  Widget _buildHero() {
+    return Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+      // Badge
+      Container(
+        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 7),
+        decoration: BoxDecoration(
+          color: const Color(0xFF6366F1).withValues(alpha: 0.1),
+          borderRadius: BorderRadius.circular(30),
+          border: Border.all(color: const Color(0xFF6366F1).withValues(alpha: 0.25)),
+        ),
+        child: Row(mainAxisSize: MainAxisSize.min, children: [
+          _pulseDot(const Color(0xFF10B981)),
+          const SizedBox(width: 8),
+          Text('Google Solution Challenge 2026 • AI Fairness Platform',
+            style: GoogleFonts.spaceGrotesk(
+              color: const Color(0xFF818CF8), fontSize: 12, fontWeight: FontWeight.w500)),
+        ]),
+      ).animate().fadeIn(delay: 100.ms).slideX(begin: -0.05),
+
+      const SizedBox(height: 28),
+
+      // Big headline
+      AnimatedBuilder(
+        animation: _floatController,
+        builder: (_, child) => Transform.translate(
+          offset: Offset(0, math.sin(_floatController.value * math.pi) * 3),
+          child: child,
+        ),
+        child: ShaderMask(
+          shaderCallback: (b) => const LinearGradient(
+            colors: [Color(0xFFFFFFFF), Color(0xFFE2E8F0), Color(0xFF818CF8)],
+            begin: Alignment.topLeft, end: Alignment.bottomRight,
+          ).createShader(b),
+          child: Text(
+            'Detect Hidden Bias.\nBuild Fair AI Systems.',
+            style: GoogleFonts.spaceGrotesk(
+              color: Colors.white, fontSize: 58,
+              fontWeight: FontWeight.w900, height: 1.08, letterSpacing: -2,
+            ),
+          ),
+        ),
+      ).animate().fadeIn(delay: 200.ms).slideY(begin: 0.06),
+
+      const SizedBox(height: 22),
+
+      Text(
+        'Upload any dataset — hiring, loans, medical or HR.\nFairLens uses Gemini AI to detect algorithmic bias, map legal\nrisks and generate a debiased dataset instantly.',
+        style: GoogleFonts.spaceGrotesk(
+          color: Colors.white.withValues(alpha: 0.48),
+          fontSize: 16, height: 1.7,
+        ),
+      ).animate().fadeIn(delay: 300.ms),
+
+      const SizedBox(height: 36),
+
+      Row(children: [
+        _heroCTA('Upload Dataset', Icons.cloud_upload_outlined, true, _pickAndAnalyze),
+        const SizedBox(width: 14),
+        _heroCTA('Try Sample Dataset', Icons.play_circle_outline_rounded, false, _pickAndAnalyze),
+      ]).animate().fadeIn(delay: 420.ms),
+
+      const SizedBox(height: 36),
+
+      // Trust row
+      Row(children: [
+        _trustChip(Icons.verified_rounded, 'GDPR Article 22', const Color(0xFF10B981)),
+        const SizedBox(width: 10),
+        _trustChip(Icons.gavel_rounded, 'Indian Law Mapped', const Color(0xFF6366F1)),
+        const SizedBox(width: 10),
+        _trustChip(Icons.psychology_rounded, 'Gemini Powered', const Color(0xFF8B5CF6)),
+      ]).animate().fadeIn(delay: 500.ms),
+    ]);
+  }
+
+  Widget _heroCTA(String label, IconData icon, bool primary, VoidCallback onTap) =>
+    GestureDetector(
+      onTap: onTap,
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 26, vertical: 14),
+        decoration: BoxDecoration(
+          gradient: primary ? const LinearGradient(
+            colors: [Color(0xFF6366F1), Color(0xFF8B5CF6)]) : null,
+          color: primary ? null : Colors.white.withValues(alpha: 0.05),
+          borderRadius: BorderRadius.circular(12),
+          border: primary ? null : Border.all(color: Colors.white.withValues(alpha: 0.12)),
+          boxShadow: primary ? [BoxShadow(
+            color: const Color(0xFF6366F1).withValues(alpha: 0.45),
+            blurRadius: 24, offset: const Offset(0, 8),
+          )] : null,
+        ),
+        child: Row(mainAxisSize: MainAxisSize.min, children: [
+          Icon(icon, size: 17, color: primary ? Colors.white : Colors.white60),
+          const SizedBox(width: 9),
+          Text(label, style: GoogleFonts.spaceGrotesk(
+            color: primary ? Colors.white : Colors.white60,
+            fontSize: 15, fontWeight: FontWeight.w700)),
+        ]),
+      ),
+    );
+
+  Widget _trustChip(IconData icon, String label, Color color) => Container(
+    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 7),
+    decoration: BoxDecoration(
+      color: color.withValues(alpha: 0.08),
+      borderRadius: BorderRadius.circular(8),
+      border: Border.all(color: color.withValues(alpha: 0.2)),
+    ),
+    child: Row(mainAxisSize: MainAxisSize.min, children: [
+      Icon(icon, size: 13, color: color),
+      const SizedBox(width: 6),
+      Text(label, style: GoogleFonts.spaceGrotesk(
+        color: color, fontSize: 12, fontWeight: FontWeight.w600)),
+    ]),
+  );
+
+  // ── UPLOAD CARD ──────────────────────────────────────────────
+  Widget _buildUploadCard() {
+    return _Tilt3DCard(
+      child: GestureDetector(
+        onTap: _isLoading ? null : _pickAndAnalyze,
+        child: AnimatedBuilder(
+          animation: _pulseController,
+          builder: (_, __) => Container(
+            width: double.infinity,
+            padding: const EdgeInsets.symmetric(vertical: 52, horizontal: 40),
+            decoration: BoxDecoration(
+              borderRadius: BorderRadius.circular(24),
+              border: Border.all(
+                color: Color.lerp(
+                  const Color(0xFF6366F1).withValues(alpha: 0.3),
+                  const Color(0xFF8B5CF6).withValues(alpha: 0.6),
+                  _pulseController.value,
+                )!,
+                width: 1.5,
+              ),
+              gradient: LinearGradient(
+                begin: Alignment.topLeft,
+                end: Alignment.bottomRight,
+                colors: [
+                  const Color(0xFF6366F1).withValues(alpha: 0.06),
+                  const Color(0xFF8B5CF6).withValues(alpha: 0.04),
+                  Colors.black.withValues(alpha: 0.3),
+                ],
+              ),
+              boxShadow: [
+                BoxShadow(
+                  color: const Color(0xFF6366F1).withValues(
+                    alpha: 0.06 + 0.1 * _pulseController.value),
+                  blurRadius: 60, spreadRadius: 10,
+                ),
+              ],
+            ),
+            child: ClipRRect(
+              borderRadius: BorderRadius.circular(24),
+              child: BackdropFilter(
+                filter: ImageFilter.blur(sigmaX: 16, sigmaY: 16),
+                child: _isLoading ? _buildLoadingState() : _buildIdleUpload(),
+              ),
+            ),
+          ),
+        ),
+      ),
+    ).animate().fadeIn(delay: 550.ms).scale(begin: const Offset(0.96, 0.96));
+  }
+
+  Widget _buildLoadingState() => Column(children: [
+    SizedBox(
+      width: 52, height: 52,
+      child: Stack(alignment: Alignment.center, children: [
+        const CircularProgressIndicator(
+          color: Color(0xFF6366F1), strokeWidth: 2.5),
+        Container(
+          width: 32, height: 32,
+          decoration: BoxDecoration(
+            color: const Color(0xFF6366F1).withValues(alpha: 0.15),
+            shape: BoxShape.circle),
+          child: const Icon(Icons.analytics_rounded,
+            color: Color(0xFF818CF8), size: 16),
+        ),
+      ]),
+    ),
+    const SizedBox(height: 20),
+    Text('Scanning for bias patterns...', style: GoogleFonts.spaceGrotesk(
+      color: Colors.white70, fontSize: 16, fontWeight: FontWeight.w600)),
+    const SizedBox(height: 8),
+    Text('Running 12+ fairness checks with Gemini AI',
+      style: GoogleFonts.spaceGrotesk(color: Colors.white38, fontSize: 13)),
+    const SizedBox(height: 20),
+    SizedBox(width: 260, child: ClipRRect(
+      borderRadius: BorderRadius.circular(4),
+      child: LinearProgressIndicator(
+        backgroundColor: Colors.white.withValues(alpha: 0.06),
+        valueColor: const AlwaysStoppedAnimation(Color(0xFF6366F1)),
+        minHeight: 3,
+      ),
+    )),
+  ]);
+
+  Widget _buildIdleUpload() => Column(children: [
+    // Animated upload icon
+    AnimatedBuilder(
+      animation: _floatController,
+      builder: (_, child) => Transform.translate(
+        offset: Offset(0, math.sin(_floatController.value * math.pi) * 5),
+        child: child,
+      ),
+      child: Container(
+        width: 72, height: 72,
+        decoration: BoxDecoration(
+          gradient: const LinearGradient(
+            colors: [Color(0xFF6366F1), Color(0xFF8B5CF6)],
+            begin: Alignment.topLeft, end: Alignment.bottomRight,
+          ),
+          borderRadius: BorderRadius.circular(20),
+          boxShadow: [BoxShadow(
+            color: const Color(0xFF6366F1).withValues(alpha: 0.4),
+            blurRadius: 28, spreadRadius: 4,
+          )],
+        ),
+        child: const Icon(Icons.upload_file_rounded, color: Colors.white, size: 34),
+      ),
+    ),
+    const SizedBox(height: 22),
+    Text('Drop your CSV dataset here',
+      style: GoogleFonts.spaceGrotesk(
+        color: Colors.white, fontSize: 22, fontWeight: FontWeight.w800)),
+    const SizedBox(height: 10),
+    Text('Supports hiring, loan, medical, HR & education datasets',
+      style: GoogleFonts.spaceGrotesk(color: Colors.white38, fontSize: 14)),
+    const SizedBox(height: 28),
+
+    // Format hints
+    Row(mainAxisAlignment: MainAxisAlignment.center, children: [
+      _uploadHint(Icons.table_chart_rounded, 'CSV Format'),
+      const SizedBox(width: 12),
+      _uploadHint(Icons.speed_rounded, '< 2 seconds'),
+      const SizedBox(width: 12),
+      _uploadHint(Icons.lock_outline_rounded, 'Never stored'),
+      const SizedBox(width: 12),
+      _uploadHint(Icons.psychology_rounded, 'Gemini AI'),
+    ]),
+    const SizedBox(height: 28),
+
+    // Big CTA
+    Container(
+      padding: const EdgeInsets.symmetric(horizontal: 40, vertical: 15),
+      decoration: BoxDecoration(
+        gradient: const LinearGradient(
+          colors: [Color(0xFF6366F1), Color(0xFF8B5CF6)]),
+        borderRadius: BorderRadius.circular(12),
+        boxShadow: [BoxShadow(
+          color: const Color(0xFF6366F1).withValues(alpha: 0.4),
+          blurRadius: 24, offset: const Offset(0, 6),
+        )],
+      ),
+      child: Row(mainAxisSize: MainAxisSize.min, children: [
+        const Icon(Icons.folder_open_rounded, color: Colors.white, size: 18),
+        const SizedBox(width: 10),
+        Text('Choose CSV File', style: GoogleFonts.spaceGrotesk(
+          color: Colors.white, fontSize: 15, fontWeight: FontWeight.w700)),
+      ]),
+    ),
+  ]);
+
+  Widget _uploadHint(IconData icon, String label) => Container(
+    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 7),
+    decoration: BoxDecoration(
+      color: Colors.white.withValues(alpha: 0.04),
+      borderRadius: BorderRadius.circular(8),
+      border: Border.all(color: Colors.white.withValues(alpha: 0.08)),
+    ),
+    child: Row(mainAxisSize: MainAxisSize.min, children: [
+      Icon(icon, size: 13, color: const Color(0xFF818CF8)),
+      const SizedBox(width: 6),
+      Text(label, style: GoogleFonts.spaceGrotesk(
+        color: Colors.white54, fontSize: 11, fontWeight: FontWeight.w500)),
+    ]),
+  );
+
+  // ── ERROR ─────────────────────────────────────────────────
+  Widget _buildError() => Container(
+    margin: const EdgeInsets.only(top: 16),
+    padding: const EdgeInsets.all(16),
+    decoration: BoxDecoration(
+      color: const Color(0xFFEF4444).withValues(alpha: 0.08),
+      borderRadius: BorderRadius.circular(12),
+      border: Border.all(color: const Color(0xFFEF4444).withValues(alpha: 0.25)),
+    ),
+    child: Row(children: [
+      const Icon(Icons.error_outline_rounded, color: Color(0xFFEF4444), size: 18),
+      const SizedBox(width: 10),
+      Expanded(child: Text(_error!, style: GoogleFonts.spaceGrotesk(
+        color: const Color(0xFFEF4444), fontSize: 13))),
+    ]),
+  );
+
+  // ── STATS ROW ────────────────────────────────────────────────
+  Widget _buildStatsRow() {
+    final stats = [
+      ('500K+', 'Datasets Analyzed', const Color(0xFF6366F1), Icons.dataset_rounded),
+      ('98.4%', 'Detection Accuracy', const Color(0xFF10B981), Icons.verified_rounded),
+      ('12+', 'Bias Categories', const Color(0xFF8B5CF6), Icons.category_rounded),
+      ('4', 'Laws Mapped', const Color(0xFFF59E0B), Icons.gavel_rounded),
+    ];
+    return Row(
+      children: stats.asMap().entries.map((e) {
+        final s = e.value;
+        return Expanded(child: Container(
+          margin: EdgeInsets.only(left: e.key == 0 ? 0 : 12),
+          padding: const EdgeInsets.all(20),
+          decoration: BoxDecoration(
+            color: s.$3.withValues(alpha: 0.06),
+            borderRadius: BorderRadius.circular(16),
+            border: Border.all(color: s.$3.withValues(alpha: 0.18)),
+            boxShadow: [BoxShadow(
+              color: s.$3.withValues(alpha: 0.06),
+              blurRadius: 20, spreadRadius: 1,
+            )],
+          ),
+          child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+            Container(
+              width: 36, height: 36,
+              decoration: BoxDecoration(
+                color: s.$3.withValues(alpha: 0.12),
+                borderRadius: BorderRadius.circular(9),
+              ),
+              child: Icon(s.$4, color: s.$3, size: 18),
+            ),
+            const SizedBox(height: 14),
+            Text(s.$1, style: GoogleFonts.spaceGrotesk(
+              color: Colors.white, fontSize: 26, fontWeight: FontWeight.w900)),
+            const SizedBox(height: 3),
+            Text(s.$2, style: GoogleFonts.spaceGrotesk(
+              color: Colors.white38, fontSize: 12)),
+          ]),
+        ));
+      }).toList(),
+    ).animate().fadeIn(delay: 150.ms);
+  }
+
+  // ── FEATURE GRID ─────────────────────────────────────────────
+  Widget _buildFeatureGrid() {
+    final features = [
+      (
+        const Color(0xFF6366F1), Icons.manage_search_rounded, '🔍',
+        'Bias Detection',
+        'Detects 12+ bias types across gender, age, caste, race, location and more from any CSV dataset.',
+        ['Gender', 'Age', 'Caste', 'Location'],
+        '82% avg bias score in hiring',
+      ),
+      (
+        const Color(0xFF8B5CF6), Icons.gavel_rounded, '⚖️',
+        'Legal Risk Mapping',
+        'Maps every bias finding to specific Indian laws, GDPR Article 22 and the EU AI Act automatically.',
+        ['Equal Rem. Act', 'Art.14-16', 'GDPR Art.22'],
+        '4 laws checked per column',
+      ),
+      (
+        const Color(0xFF06B6D4), Icons.psychology_rounded, '🤖',
+        'Gemini AI Insights',
+        'Get plain-English explanations written by Gemini — what the bias means and how it affects people.',
+        ['Executive summary', 'Legal risk', 'Action steps'],
+        'Powered by Gemini 1.5 Flash',
+      ),
+      (
+        const Color(0xFF10B981), Icons.insert_chart_rounded, '📊',
+        'Visual Analytics',
+        'Interactive bar charts, bias heatmaps, group comparison charts and feature importance maps.',
+        ['Bar charts', 'Heatmaps', 'Group rates'],
+        'fl_chart powered visuals',
+      ),
+      (
+        const Color(0xFFF59E0B), Icons.auto_fix_high_rounded, '🛠️',
+        'Auto Bias Fix',
+        'Removes or anonymizes high-risk columns. Download a cleaned, debiased CSV dataset instantly.',
+        ['Remove cols', 'Anonymize', 'Download CSV'],
+        'Up to 68% bias reduction',
+      ),
+      (
+        const Color(0xFFEF4444), Icons.picture_as_pdf_rounded, '📄',
+        'PDF Report Export',
+        'Generates a shareable HTML/PDF report with full bias analysis, charts and AI recommendations.',
+        ['Full report', 'Charts', 'Shareable link'],
+        'One-click export',
+      ),
+    ];
+
+    return Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+      _sectionLabel('Capabilities'),
+      const SizedBox(height: 20),
+      Row(children: features.sublist(0, 3).asMap().entries.map((e) {
+        final f = e.value;
+        return Expanded(child: Padding(
+          padding: EdgeInsets.only(left: e.key == 0 ? 0 : 12),
+          child: _simpleFeatureCard(f.$1, f.$2, f.$4, f.$5, f.$6, e.key, f.$7),
+        ));
+      }).toList()),
+      const SizedBox(height: 12),
+      Row(children: features.sublist(3, 6).asMap().entries.map((e) {
+        final f = e.value;
+        return Expanded(child: Padding(
+          padding: EdgeInsets.only(left: e.key == 0 ? 0 : 12),
+          child: _simpleFeatureCard(f.$1, f.$2, f.$4, f.$5, f.$6, e.key + 3, f.$7),
+        ));
+      }).toList()),
+    ]);
+  }
+
+  Widget _simpleFeatureCard(Color color, IconData icon, String title,
+      String desc, List<String> tags, int index, String technical) {
+    return GestureDetector(
+      onTap: () {
+        Navigator.push(
+          context,
+          MaterialPageRoute(
+            builder: (_) => FeatureDetailScreen(
+              feature: FeatureDetail(
+                title: title,
+                description: desc,
+                icon: icon,
+                color: color,
+                highlights: tags.map((t) => 'Advanced $t protection and auditing system.').toList(),
+                technicalDetail: technical,
+              ),
+            ),
+          ),
+        );
+      },
+      child: Container(
+        height: 190,
+        padding: const EdgeInsets.all(18),
+        decoration: BoxDecoration(
+          color: const Color(0xFF0D0D1A),
+          borderRadius: BorderRadius.circular(16),
+          border: Border.all(color: color.withOpacity(0.25)),
+          gradient: LinearGradient(
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
+            colors: [color.withOpacity(0.08), const Color(0xFF0D0D1A)],
+          ),
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(mainAxisAlignment: MainAxisAlignment.spaceBetween, children: [
+              Container(
+                width: 44, height: 44,
+                decoration: BoxDecoration(
+                  color: color.withOpacity(0.2),
+                  borderRadius: BorderRadius.circular(12),
+                  border: Border.all(color: color.withOpacity(0.3)),
+                ),
+                child: Icon(icon, color: color, size: 22),
+              ),
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                decoration: BoxDecoration(
+                  color: color.withOpacity(0.12),
+                  borderRadius: BorderRadius.circular(6),
+                  border: Border.all(color: color.withOpacity(0.2)),
+                ),
+                child: Text('ACTIVE', style: TextStyle(
+                  color: color, fontSize: 8, fontWeight: FontWeight.w800, letterSpacing: 0.8)),
+              ),
+            ]),
+            const SizedBox(height: 14),
+            Text(title, style: GoogleFonts.spaceGrotesk(
+              color: Colors.white, fontSize: 14, fontWeight: FontWeight.w800)),
+            const SizedBox(height: 6),
+            Expanded(child: Text(desc, maxLines: 2, overflow: TextOverflow.ellipsis,
+              style: GoogleFonts.spaceGrotesk(
+                color: Colors.white38, fontSize: 11, height: 1.5))),
+            const SizedBox(height: 10),
+            Row(children: tags.take(2).map((t) => Container(
+              margin: const EdgeInsets.only(right: 5),
+              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+              decoration: BoxDecoration(
+              color: color.withValues(alpha: 0.12),
+              borderRadius: BorderRadius.circular(5),
+              border: Border.all(color: color.withValues(alpha: 0.2)),
+            ),
+            child: Text(t, style: TextStyle(
+              color: color, fontSize: 9, fontWeight: FontWeight.w600)),
+          )).toList()),
+        ],
+      ),
+    ),
+    ).animate().fadeIn(delay: Duration(milliseconds: 80 * index));
+  }
+
+  // ── HOW IT WORKS ─────────────────────────────────────────────
+  Widget _buildHowItWorks() {
+    final steps = [
+      (const Color(0xFF6366F1), Icons.upload_file_rounded, '01', 'Upload Your CSV',
+        'Drop any dataset — hiring data, loan applications, medical records, HR reviews or education data. Any CSV works.',
+        '< 5MB recommended'),
+      (const Color(0xFF8B5CF6), Icons.analytics_rounded, '02', 'FairLens Scans',
+        'Our engine checks every column against 12+ bias types using statistical fairness metrics like Disparate Impact and Statistical Parity.',
+        '~1.2s average'),
+      (const Color(0xFF06B6D4), Icons.psychology_rounded, '03', 'Gemini Explains',
+        'Gemini AI writes a plain-English executive report — what the bias means, who it affects and which laws are violated.',
+        'Powered by Gemini 1.5'),
+      (const Color(0xFF10B981), Icons.download_done_rounded, '04', 'Fix & Export',
+        'Download a debiased CSV with high-risk columns removed or anonymized. Export a shareable PDF report.',
+        'One click'),
+    ];
+
+    return Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+      _sectionLabel('How It Works'),
+      const SizedBox(height: 24),
+      Row(crossAxisAlignment: CrossAxisAlignment.start,
+        children: steps.asMap().entries.map((e) {
+          final s = e.value;
+          final isLast = e.key == steps.length - 1;
+          return Expanded(child: Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Expanded(child: _StepCard(
+                color: s.$1,
+                icon: s.$2,
+                number: s.$3,
+                title: s.$4,
+                desc: s.$5,
+                metric: s.$6,
+                index: e.key,
+              )),
+              if (!isLast) Padding(
+                padding: const EdgeInsets.only(top: 28),
+                child: Icon(Icons.arrow_forward_rounded,
+                  color: Colors.white.withValues(alpha: 0.12), size: 22),
+              ),
+            ],
+          ));
+        }).toList(),
+      ),
+    ]);
+  }
+
+  // ── LIVE TICKER ──────────────────────────────────────────────
+  Widget _buildLiveTicker() {
+    final events = [
+      ('hiring_q3_2024.csv', '72/100', const Color(0xFFEF4444), 'CRITICAL'),
+      ('loan_applications.csv', '41/100', const Color(0xFFF59E0B), 'HIGH'),
+      ('medical_records.csv', '28/100', const Color(0xFFF59E0B), 'MEDIUM'),
+      ('hr_reviews_2024.csv', '14/100', const Color(0xFF10B981), 'LOW'),
+      ('admissions_data.csv', '63/100', const Color(0xFFEF4444), 'CRITICAL'),
+    ];
+    return Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+      _sectionLabel('Recent Analyses'),
+      const SizedBox(height: 16),
+      Container(
+        decoration: BoxDecoration(
+          color: Colors.white.withValues(alpha: 0.02),
+          borderRadius: BorderRadius.circular(16),
+          border: Border.all(color: Colors.white.withValues(alpha: 0.07)),
+        ),
+        child: Column(children: events.asMap().entries.map((e) {
+          final item = e.value;
+          final isLast = e.key == events.length - 1;
+          return Container(
+            padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 14),
+            decoration: BoxDecoration(
+              border: isLast ? null : Border(
+                bottom: BorderSide(color: Colors.white.withValues(alpha: 0.05))),
+            ),
+            child: Row(children: [
+              Container(
+                width: 38, height: 38,
+                decoration: BoxDecoration(
+                  color: item.$3.withValues(alpha: 0.1),
+                  borderRadius: BorderRadius.circular(9),
+                ),
+                child: Icon(Icons.insert_drive_file_rounded, color: item.$3, size: 18),
+              ),
+              const SizedBox(width: 14),
+              Expanded(child: Text(item.$1, style: GoogleFonts.spaceGrotesk(
+                color: Colors.white, fontSize: 14, fontWeight: FontWeight.w600))),
+              Text(item.$2, style: GoogleFonts.spaceGrotesk(
+                color: item.$3, fontSize: 15,
+                fontWeight: FontWeight.w800)),
+              const SizedBox(width: 14),
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                decoration: BoxDecoration(
+                  color: item.$3.withValues(alpha: 0.1),
+                  borderRadius: BorderRadius.circular(6),
+                  border: Border.all(color: item.$3.withValues(alpha: 0.25)),
+                ),
+                child: Text(item.$4, style: TextStyle(
+                  color: item.$3, fontSize: 10,
+                  fontWeight: FontWeight.w800, letterSpacing: 1)),
+              ),
+            ]),
+          );
+        }).toList()),
+      ),
+    ]).animate().fadeIn(delay: 100.ms);
+  }
+
+  // ── SAMPLE DATASETS ──────────────────────────────────────────
+  Widget _buildSampleDatasets() {
+    final samples = [
+      ('👩‍💼', 'Hiring Dataset', 'Gender & age bias in tech hiring', const Color(0xFF6366F1), '72/100'),
+      ('🏦', 'Loan Dataset', 'Caste & location bias in approvals', const Color(0xFF8B5CF6), '58/100'),
+      ('🏥', 'Medical Dataset', 'Race bias in diagnosis rates', const Color(0xFF10B981), '34/100'),
+      ('🎓', 'Education Dataset', 'Socioeconomic bias in admissions', const Color(0xFFF59E0B), '47/100'),
+    ];
+    return Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+      _sectionLabel('Try a Sample Dataset'),
+      const SizedBox(height: 18),
+      GridView.count(
+        crossAxisCount: 4,
+        shrinkWrap: true,
+        physics: const NeverScrollableScrollPhysics(),
+        crossAxisSpacing: 12,
+        mainAxisSpacing: 12,
+        childAspectRatio: 1.3,
+        children: samples.map((s) => GestureDetector(
+          onTap: _pickAndAnalyze,
+          child: _SampleCard(
+            emoji: s.$1, title: s.$2,
+            desc: s.$3, color: s.$4, score: s.$5,
+          ),
+        )).toList(),
+      ),
+    ]);
+  }
+
+  // ── API BLOCK ─────────────────────────────────────────────
+  Widget _buildApiBlock() {
+    return Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+      _sectionLabel('Developer API'),
+      const SizedBox(height: 18),
+      Container(
+        padding: const EdgeInsets.all(28),
+        decoration: BoxDecoration(
+          color: const Color(0xFF0A0A18),
+          borderRadius: BorderRadius.circular(20),
+          border: Border.all(color: const Color(0xFF6366F1).withValues(alpha: 0.2)),
+          boxShadow: [BoxShadow(
+            color: const Color(0xFF6366F1).withValues(alpha: 0.05),
+            blurRadius: 30, spreadRadius: 2,
+          )],
+        ),
+        child: Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
+          Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+            Text('Integrate FairLens into\nyour CI/CD pipeline',
+              style: GoogleFonts.spaceGrotesk(
+                color: Colors.white, fontSize: 22, fontWeight: FontWeight.w800, height: 1.3)),
+            const SizedBox(height: 10),
+            Text('Automatically reject biased models before deployment.\nWorks with any ML framework.',
+              style: GoogleFonts.spaceGrotesk(
+                color: Colors.white38, fontSize: 14, height: 1.6)),
+            const SizedBox(height: 22),
+            Row(children: [
+              _trustChip(Icons.bolt_rounded, 'REST API', const Color(0xFF6366F1)),
+              const SizedBox(width: 8),
+              _trustChip(Icons.code_rounded, 'Python SDK', const Color(0xFF10B981)),
+              const SizedBox(width: 8),
+              _trustChip(Icons.webhook_rounded, 'Webhooks', const Color(0xFF8B5CF6)),
+            ]),
+          ])),
+          const SizedBox(width: 32),
+          Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+            Row(children: [
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                decoration: BoxDecoration(
+                  color: const Color(0xFF10B981).withValues(alpha: 0.15),
+                  borderRadius: BorderRadius.circular(6)),
+                child: Text('POST', style: GoogleFonts.spaceMono(
+                  color: const Color(0xFF10B981), fontWeight: FontWeight.bold, fontSize: 11)),
+              ),
+              const SizedBox(width: 10),
+              Text('api.fairlens.dev/v1/analyze',
+                style: GoogleFonts.spaceMono(color: Colors.white54, fontSize: 12)),
+            ]),
+            const SizedBox(height: 12),
+            Container(
+              padding: const EdgeInsets.all(16),
+              decoration: BoxDecoration(
+                color: Colors.black.withValues(alpha: 0.5),
+                borderRadius: BorderRadius.circular(12),
+                border: Border.all(color: Colors.white.withValues(alpha: 0.06)),
+              ),
+              child: Text(
+'''{
+  "dataset_url": "s3://data/hiring.csv",
+  "domain": "hiring",
+  "auto_fix": true,
+  "notify_webhook": "https://..."
+}''',
+                style: GoogleFonts.spaceMono(
+                  color: const Color(0xFF818CF8), fontSize: 12, height: 1.6)),
+            ),
+          ])),
+        ]),
+      ),
+    ]).animate().fadeIn(delay: 100.ms);
+  }
+
+  // ── FOOTER ───────────────────────────────────────────────────
+  Widget _buildFooter() {
+    return Column(children: [
+      Container(height: 1, color: Colors.white.withValues(alpha: 0.07)),
+      const SizedBox(height: 30),
+      Row(mainAxisAlignment: MainAxisAlignment.spaceBetween, children: [
+        Row(children: [
+          Container(
+            width: 28, height: 28,
+            decoration: BoxDecoration(
+              gradient: const LinearGradient(
+                colors: [Color(0xFF6366F1), Color(0xFF8B5CF6)]),
+              borderRadius: BorderRadius.circular(7),
+            ),
+            child: const Icon(Icons.lens_blur_rounded, color: Colors.white, size: 15),
+          ),
+          const SizedBox(width: 8),
+          Text('FairLens', style: GoogleFonts.spaceGrotesk(
+            color: Colors.white54, fontSize: 14, fontWeight: FontWeight.w700)),
+          const SizedBox(width: 12),
+          Text('Built for Google Solution Challenge 2026',
+            style: GoogleFonts.spaceGrotesk(color: Colors.white24, fontSize: 12)),
+        ]),
+        Row(children: [
+          _footerLink('GitHub'),
+          const SizedBox(width: 20),
+          _footerLink('Docs'),
+          const SizedBox(width: 20),
+          _footerLink('About'),
+          const SizedBox(width: 20),
+          _footerLink('Privacy'),
+        ]),
+      ]),
+    ]);
+  }
+
+  Widget _footerLink(String t) => Text(t, style: GoogleFonts.spaceGrotesk(
+    color: Colors.white30, fontSize: 12));
+
+  Widget _buildAgenticAuditor() {
+    return Positioned(
+      bottom: 32, right: 32,
+      child: _Tilt3DCard(
+        child: Container(
+          width: 280,
+          padding: const EdgeInsets.all(20),
+          decoration: BoxDecoration(
+            color: const Color(0xFF0D0D1A),
+            borderRadius: BorderRadius.circular(24),
+            border: Border.all(color: const Color(0xFF8B5CF6).withValues(alpha: 0.5), width: 1.5),
+            boxShadow: [
+              BoxShadow(color: const Color(0xFF8B5CF6).withValues(alpha: 0.2), blurRadius: 30, spreadRadius: -5)
+            ],
+          ),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Row(
+                children: [
+                  Container(
+                    padding: const EdgeInsets.all(8),
+                    decoration: const BoxDecoration(color: Color(0xFF8B5CF6), shape: BoxShape.circle),
+                    child: const Icon(Icons.psychology_rounded, color: Colors.white, size: 20),
+                  ),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text('Agentic Auditor', style: GoogleFonts.spaceGrotesk(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 14)),
+                        const Text('Ready to explain findings...', style: TextStyle(color: Colors.white38, fontSize: 10)),
+                      ],
+                    ),
+                  ),
+                  const Icon(Icons.more_vert, color: Colors.white24, size: 16),
+                ],
+              ),
+              const SizedBox(height: 16),
+              Container(
+                padding: const EdgeInsets.all(12),
+                decoration: BoxDecoration(color: Colors.white.withValues(alpha: 0.03), borderRadius: BorderRadius.circular(12)),
+                child: const Text(
+                  '“Your recent CSV audit shows high risk in Geographic Bias. Shall we check compliance for India?”',
+                  style: TextStyle(color: Colors.white70, fontSize: 12, height: 1.5),
+                ),
+              ),
+              const SizedBox(height: 16),
+              Row(
+                children: [
+                  Expanded(
+                    child: Container(
+                      height: 36,
+                      padding: const EdgeInsets.symmetric(horizontal: 12),
+                      decoration: BoxDecoration(color: Colors.black, borderRadius: BorderRadius.circular(8)),
+                      child: const TextField(
+                        style: TextStyle(color: Colors.white, fontSize: 12),
+                        decoration: InputDecoration(hintText: 'Ask Auditor...', hintStyle: TextStyle(color: Colors.white24), border: InputBorder.none),
+                      ),
+                    ),
+                  ),
+                  const SizedBox(width: 8),
+                  Container(
+                    width: 36, height: 36,
+                    decoration: BoxDecoration(color: const Color(0xFF6366F1), borderRadius: BorderRadius.circular(8)),
+                    child: const Icon(Icons.send_rounded, color: Colors.white, size: 16),
+                  ),
+                ],
+              )
+            ],
+          ),
+        ),
+      ),
+    ).animate().fadeIn(delay: 1000.ms).slideY(begin: 0.5);
+  }
+
+  // ── HELPERS ──────────────────────────────────────────────────
+  Widget _sectionLabel(String text) => Row(children: [
+    Container(
+      width: 3, height: 16,
+      decoration: BoxDecoration(
+        gradient: const LinearGradient(
+          colors: [Color(0xFF6366F1), Color(0xFF8B5CF6)],
+          begin: Alignment.topCenter, end: Alignment.bottomCenter),
+        borderRadius: BorderRadius.circular(2),
+      ),
+    ),
+    const SizedBox(width: 10),
+    Text(text.toUpperCase(), style: GoogleFonts.spaceGrotesk(
+      color: Colors.white38, fontSize: 11,
+      fontWeight: FontWeight.w700, letterSpacing: 2.5)),
+  ]);
+
+  Widget _glowBlob(Color color, double size) => Container(
+    width: size, height: size,
+    decoration: BoxDecoration(
+      shape: BoxShape.circle,
+      gradient: RadialGradient(
+        colors: [color.withValues(alpha: 0.1), color.withValues(alpha: 0.0)]),
+    ),
+  );
+
+  Widget _pulseDot(Color color) => AnimatedBuilder(
+    animation: _pulseController,
+    builder: (_, __) => Container(
+      width: 7, height: 7,
+      decoration: BoxDecoration(
+        shape: BoxShape.circle,
+        color: color,
+        boxShadow: [BoxShadow(
+          color: color.withValues(alpha: 0.4 + 0.4 * _pulseController.value),
+          blurRadius: 6 + 4 * _pulseController.value,
+        )],
+      ),
+    ),
+  );
+}
+
+// ══════════════════════════════════════════════════════════════
+//  FEATURE CARD — filled with content
+// ══════════════════════════════════════════════════════════════
+class _FeatureCard extends StatefulWidget {
+  final int index;
+  final Color color;
+  final IconData iconData;
+  final String emoji;
+  final String title;
+  final String desc;
+  final List<String> tags;
+  final String metric;
+
+  const _FeatureCard({
+    required this.index, required this.color, required this.iconData,
+    required this.emoji, required this.title, required this.desc,
+    required this.tags, required this.metric,
+  });
+
+  @override
+  State<_FeatureCard> createState() => _FeatureCardState();
+}
+
+class _FeatureCardState extends State<_FeatureCard> {
+  bool _hover = false;
+
+  @override
+  Widget build(BuildContext context) {
+    return MouseRegion(
+      onEnter: (_) => setState(() => _hover = true),
+      onExit: (_) => setState(() => _hover = false),
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 220),
+        transform: Matrix4.identity()
+          ..setEntry(3, 2, 0.001)
+          ..translate(0.0, _hover ? -8.0 : 0.0, _hover ? 10.0 : 0.0),
+        decoration: BoxDecoration(
+          color: _hover
+              ? widget.color.withValues(alpha: 0.08)
+              : const Color(0xFF0A0A18),
+          borderRadius: BorderRadius.circular(18),
+          border: Border.all(
+            color: _hover
+                ? widget.color.withValues(alpha: 0.35)
+                : Colors.white.withValues(alpha: 0.07),
+            width: _hover ? 1.5 : 1,
+          ),
+          boxShadow: _hover ? [
+            BoxShadow(
+              color: widget.color.withValues(alpha: 0.2),
+              blurRadius: 32, spreadRadius: 2, offset: const Offset(0, 10)),
+            BoxShadow(
+              color: Colors.black.withValues(alpha: 0.4),
+              blurRadius: 20, offset: const Offset(0, 8)),
+          ] : [
+            BoxShadow(
+              color: Colors.black.withValues(alpha: 0.2),
+              blurRadius: 10, offset: const Offset(0, 4)),
+          ],
+        ),
+        child: Padding(
+          padding: const EdgeInsets.all(20),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              // Top row: big icon + LIVE badge
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  Container(
+                    width: 52, height: 52,
+                    decoration: BoxDecoration(
+                      color: widget.color.withValues(alpha: 0.15),
+                      borderRadius: BorderRadius.circular(14),
+                      border: Border.all(color: widget.color.withValues(alpha: 0.3)),
+                    ),
+                    child: Icon(widget.iconData, color: widget.color, size: 26),
+                  ),
+                  Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+                    decoration: BoxDecoration(
+                      color: widget.color.withValues(alpha: 0.12),
+                      borderRadius: BorderRadius.circular(20),
+                      border: Border.all(color: widget.color.withValues(alpha: 0.25)),
+                    ),
+                    child: Row(mainAxisSize: MainAxisSize.min, children: [
+                      Container(
+                        width: 5, height: 5,
+                        decoration: BoxDecoration(
+                          shape: BoxShape.circle,
+                          color: widget.color,
+                        ),
+                      ),
+                      const SizedBox(width: 5),
+                      Text('LIVE', style: TextStyle(
+                        color: widget.color, fontSize: 9,
+                        fontWeight: FontWeight.w800, letterSpacing: 1.2)),
+                    ]),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 16),
+
+              // Title
+              Text(widget.title, style: GoogleFonts.spaceGrotesk(
+                color: Colors.white, fontSize: 15,
+                fontWeight: FontWeight.w800)),
+              const SizedBox(height: 8),
+
+              // Description — 2 lines max
+              Text(widget.desc,
+                maxLines: 3,
+                overflow: TextOverflow.ellipsis,
+                style: GoogleFonts.spaceGrotesk(
+                  color: Colors.white.withValues(alpha: 0.45),
+                  fontSize: 11.5, height: 1.55)),
+              const SizedBox(height: 14),
+
+              // Tags row
+              Wrap(spacing: 5, runSpacing: 5,
+                children: widget.tags.take(3).map((t) =>
+                  Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                    decoration: BoxDecoration(
+                      color: widget.color.withValues(alpha: 0.1),
+                      borderRadius: BorderRadius.circular(6),
+                      border: Border.all(color: widget.color.withValues(alpha: 0.2)),
+                    ),
+                    child: Text(t, style: TextStyle(
+                      color: widget.color.withValues(alpha: 0.9),
+                      fontSize: 10, fontWeight: FontWeight.w600)),
+                  )
+                ).toList()),
+              const SizedBox(height: 14),
+
+              // Bottom metric bar
+              Container(
+                width: double.infinity,
+                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 9),
+                decoration: BoxDecoration(
+                  color: widget.color.withValues(alpha: 0.07),
+                  borderRadius: BorderRadius.circular(9),
+                  border: Border.all(color: widget.color.withValues(alpha: 0.12)),
+                ),
+                child: Row(children: [
+                  Container(
+                    width: 7, height: 7,
+                    decoration: BoxDecoration(
+                      shape: BoxShape.circle,
+                      color: widget.color,
+                      boxShadow: [BoxShadow(
+                        color: widget.color.withValues(alpha: 0.5),
+                        blurRadius: 6)],
+                    ),
+                  ),
+                  const SizedBox(width: 8),
+                  Flexible(child: Text(widget.metric,
+                    overflow: TextOverflow.ellipsis,
+                    style: GoogleFonts.spaceGrotesk(
+                      color: Colors.white54, fontSize: 11))),
+                ]),
+              ),
+            ],
+          ),
+        ),
+      ).animate().fadeIn(delay: Duration(milliseconds: 80 * widget.index))
+           .slideY(begin: 0.06, delay: Duration(milliseconds: 80 * widget.index)),
+    );
+  }
+}
+
+// ══════════════════════════════════════════════════════════════
+//  STEP CARD
+// ══════════════════════════════════════════════════════════════
+class _StepCard extends StatefulWidget {
+  final Color color;
+  final IconData icon;
+  final String number, title, desc, metric;
+  final int index;
+  const _StepCard({
+    required this.color, required this.icon, required this.number,
+    required this.title, required this.desc, required this.metric,
+    required this.index,
+  });
+  @override
+  State<_StepCard> createState() => _StepCardState();
+}
+
+class _StepCardState extends State<_StepCard> {
+  bool _hover = false;
+
+  @override
+  Widget build(BuildContext context) {
+    return MouseRegion(
+      onEnter: (_) => setState(() => _hover = true),
+      onExit: (_) => setState(() => _hover = false),
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 200),
+        margin: const EdgeInsets.only(right: 4),
+        padding: const EdgeInsets.all(20),
+        transform: Matrix4.identity()
+          ..translate(0.0, _hover ? -5.0 : 0.0),
+        decoration: BoxDecoration(
+          color: _hover
+              ? widget.color.withValues(alpha: 0.07)
+              : const Color(0xFF0A0A18),
+          borderRadius: BorderRadius.circular(16),
+          border: Border.all(
+            color: _hover
+                ? widget.color.withValues(alpha: 0.3)
+                : Colors.white.withValues(alpha: 0.06)),
+          boxShadow: _hover ? [BoxShadow(
+            color: widget.color.withValues(alpha: 0.15),
+            blurRadius: 24, spreadRadius: 1, offset: const Offset(0, 8),
+          )] : [],
+        ),
+        child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+          Row(children: [
+            Container(
+              width: 40, height: 40,
+              decoration: BoxDecoration(
+                color: widget.color.withValues(alpha: 0.12),
+                borderRadius: BorderRadius.circular(11),
+              ),
+              child: Icon(widget.icon, color: widget.color, size: 20),
+            ),
+            const Spacer(),
+            Text(widget.number, style: TextStyle(
+              color: widget.color.withValues(alpha: 0.3),
+              fontSize: 28, fontWeight: FontWeight.w900,
+              fontFamily: GoogleFonts.spaceGrotesk().fontFamily)),
+          ]),
+          const SizedBox(height: 14),
+          Text(widget.title, style: GoogleFonts.spaceGrotesk(
+            color: Colors.white, fontSize: 14, fontWeight: FontWeight.w800)),
+          const SizedBox(height: 8),
+          Text(widget.desc, style: GoogleFonts.spaceGrotesk(
+            color: Colors.white.withValues(alpha: 0.4),
+            fontSize: 11, height: 1.6)),
+          const SizedBox(height: 14),
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+            decoration: BoxDecoration(
+              color: widget.color.withValues(alpha: 0.08),
+              borderRadius: BorderRadius.circular(6),
+            ),
+            child: Text(widget.metric, style: TextStyle(
+              color: widget.color, fontSize: 10, fontWeight: FontWeight.w700)),
+          ),
+        ]),
+      ).animate().fadeIn(
+        delay: Duration(milliseconds: 100 * widget.index))
+       .slideY(begin: 0.05, delay: Duration(milliseconds: 100 * widget.index)),
+    );
+  }
+}
+
+// ══════════════════════════════════════════════════════════════
+//  SAMPLE CARD
+// ══════════════════════════════════════════════════════════════
+class _SampleCard extends StatefulWidget {
+  final String emoji, title, desc, score;
+  final Color color;
+  const _SampleCard({
+    required this.emoji, required this.title, required this.desc,
+    required this.color, required this.score,
+  });
+  @override
+  State<_SampleCard> createState() => _SampleCardState();
+}
+
+class _SampleCardState extends State<_SampleCard> {
+  bool _hover = false;
+  @override
+  Widget build(BuildContext context) {
+    return MouseRegion(
+      onEnter: (_) => setState(() => _hover = true),
+      onExit: (_) => setState(() => _hover = false),
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 200),
+        transform: Matrix4.identity()..translate(0.0, _hover ? -6.0 : 0.0),
+        padding: const EdgeInsets.all(16),
+        decoration: BoxDecoration(
+          color: _hover
+              ? widget.color.withValues(alpha: 0.09)
+              : widget.color.withValues(alpha: 0.05),
+          borderRadius: BorderRadius.circular(14),
+          border: Border.all(
+            color: _hover
+                ? widget.color.withValues(alpha: 0.35)
+                : widget.color.withValues(alpha: 0.15)),
+          boxShadow: _hover ? [BoxShadow(
+            color: widget.color.withValues(alpha: 0.18),
+            blurRadius: 20, offset: const Offset(0, 6),
+          )] : [],
+        ),
+        child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+          Row(mainAxisAlignment: MainAxisAlignment.spaceBetween, children: [
+            Text(widget.emoji, style: const TextStyle(fontSize: 22)),
+            Text(widget.score, style: TextStyle(
+              color: widget.color, fontSize: 15,
+              fontWeight: FontWeight.w900,
+              fontFamily: GoogleFonts.spaceGrotesk().fontFamily)),
+          ]),
+          const SizedBox(height: 10),
+          Text(widget.title, style: GoogleFonts.spaceGrotesk(
+            color: Colors.white, fontSize: 13, fontWeight: FontWeight.w700)),
+          const SizedBox(height: 5),
+          Text(widget.desc, style: GoogleFonts.spaceGrotesk(
+            color: Colors.white38, fontSize: 11, height: 1.4)),
+          const Spacer(),
+          Row(children: [
+            Icon(Icons.play_arrow_rounded, color: widget.color, size: 14),
+            const SizedBox(width: 4),
+            Text('Try this sample', style: TextStyle(
+              color: widget.color, fontSize: 11, fontWeight: FontWeight.w600)),
+          ]),
+        ]),
+      ),
+    );
+  }
+}
+
+// ══════════════════════════════════════════════════════════════
+//  3D TILT CARD
+// ══════════════════════════════════════════════════════════════
+class _Tilt3DCard extends StatefulWidget {
+  final Widget child;
+  const _Tilt3DCard({required this.child});
+  @override
+  State<_Tilt3DCard> createState() => _Tilt3DCardState();
+}
+
+class _Tilt3DCardState extends State<_Tilt3DCard> {
+  double _x = 0, _y = 0;
+  @override
+  Widget build(BuildContext context) {
+    return MouseRegion(
+      onHover: (e) {
+        final box = context.findRenderObject() as RenderBox?;
+        if (box == null) return;
+        final size = box.size;
+        final pos = box.globalToLocal(e.position);
+        setState(() {
+          _x = (pos.dy - size.height / 2) / (size.height / 2);
+          _y = (pos.dx - size.width / 2) / (size.width / 2);
+        });
+      },
+      onExit: (_) => setState(() { _x = 0; _y = 0; }),
+      child: Transform(
+        transform: Matrix4.identity()
+          ..setEntry(3, 2, 0.001)
+          ..rotateX(-_x * 0.05)
+          ..rotateY(_y * 0.05),
+        alignment: FractionalOffset.center,
+        child: widget.child,
+      ),
+    );
+  }
+}
+
+// ══════════════════════════════════════════════════════════════
+//  GRID PAINTER
+// ══════════════════════════════════════════════════════════════
+class _GridPainter extends CustomPainter {
+  @override
+  void paint(Canvas canvas, Size size) {
+    final paint = Paint()
+      ..color = Colors.white.withValues(alpha: 0.025)
+      ..strokeWidth = 0.5;
+    const spacing = 48.0;
+    for (double x = 0; x < size.width; x += spacing) {
+      canvas.drawLine(Offset(x, 0), Offset(x, size.height), paint);
+    }
+    for (double y = 0; y < size.height; y += spacing) {
+      canvas.drawLine(Offset(0, y), Offset(size.width, y), paint);
+    }
+  }
+  @override
+  bool shouldRepaint(_) => false;
+}

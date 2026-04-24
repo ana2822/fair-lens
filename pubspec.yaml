@@ -1,0 +1,61 @@
+name: fairlens
+description: AI-powered bias detection tool for datasets
+
+publish_to: 'none'
+version: 1.0.0+1
+
+environment:
+  sdk: '>=3.0.0 <4.0.0'
+
+dependencies:
+  flutter:
+    sdk: flutter
+
+  # Firebase
+  firebase_core: ^2.32.0
+  cloud_firestore: ^4.17.5
+  firebase_auth: ^4.20.0
+  firebase_analytics: ^10.10.5
+  google_sign_in: ^6.2.1
+
+  # File picking
+  file_picker: ^8.0.0
+
+  # CSV parsing
+  csv: ^5.1.1
+
+  # Charts
+  fl_chart: ^0.66.2
+
+  # HTTP for Gemini API
+  http: ^1.1.2
+
+  flutter_dotenv: ^5.1.0
+
+  # UI
+  google_fonts: ^6.1.0
+  lottie: ^2.7.0
+  flutter_animate: ^4.3.0
+  percent_indicator: ^4.2.3
+
+  # Utils
+  uuid: ^4.2.1
+  intl: ^0.19.0
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+  flutter_lints: ^3.0.0
+
+flutter:
+  uses-material-design: true
+  assets:
+    - assets/
+    - .env
+  fonts:
+    - family: FairLensEmoji
+      fonts:
+        - asset: assets/fonts/SegoeUIEmoji.ttf
+    - family: FairLensSymbols
+      fonts:
+        - asset: assets/fonts/SegoeUISymbol.ttf
