@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:file_picker/file_picker.dart';
 import 'package:csv/csv.dart';
@@ -16,6 +17,7 @@ import 'simulator_screen.dart';
 import 'feature_detail_screen.dart';
 import 'global_compliance_screen.dart';
 import '../services/auth_service.dart';
+import '../services/gemini_service.dart';
 import 'login_screen.dart';
 
 class HomeScreen extends StatefulWidget {
@@ -282,49 +284,102 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
               ]),
             ),
             const Spacer(),
-            _navBtn('Gov Dashboard', Icons.account_balance_rounded,
-              () => Navigator.push(context, MaterialPageRoute(builder: (_) => const GovDashboardScreen()))),
-            _navBtn('Text Bias', Icons.document_scanner,
-              () => Navigator.push(context, MaterialPageRoute(builder: (_) => const TextBiasScreen()))),
-            _navBtn('Simulator', Icons.tune_rounded,
-              () => Navigator.push(context, MaterialPageRoute(builder: (_) => const SimulatorScreen()))),
-            _navBtn('Face Bias', Icons.face_retouching_natural,
-              () => Navigator.push(context, MaterialPageRoute(builder: (_) => const FaceBiasScreen()))),
-            _navBtn('Roadmap', Icons.public_rounded,
-              () => Navigator.push(context, MaterialPageRoute(builder: (_) => const GlobalComplianceScreen()))),
+            
+            // Responsive Navbar Logic
+            if (MediaQuery.of(context).size.width > 1100) ...[
+              _navBtn('Gov Dashboard', Icons.account_balance_rounded, () => Navigator.push(context, MaterialPageRoute(builder: (_) => const GovDashboardScreen())), true),
+              _navBtn('Text Bias', Icons.document_scanner, () => Navigator.push(context, MaterialPageRoute(builder: (_) => const TextBiasScreen())), true),
+              _navBtn('Simulator', Icons.tune_rounded, () => Navigator.push(context, MaterialPageRoute(builder: (_) => const SimulatorScreen())), true),
+              _navBtn('Face Bias', Icons.face_retouching_natural, () => Navigator.push(context, MaterialPageRoute(builder: (_) => const FaceBiasScreen())), true),
+              _navBtn('Roadmap', Icons.public_rounded, () => Navigator.push(context, MaterialPageRoute(builder: (_) => const GlobalComplianceScreen())), true),
+            ] else if (MediaQuery.of(context).size.width > 750) ...[
+              _navBtn('', Icons.account_balance_rounded, () => Navigator.push(context, MaterialPageRoute(builder: (_) => const GovDashboardScreen())), false),
+              _navBtn('', Icons.document_scanner, () => Navigator.push(context, MaterialPageRoute(builder: (_) => const TextBiasScreen())), false),
+              _navBtn('', Icons.tune_rounded, () => Navigator.push(context, MaterialPageRoute(builder: (_) => const SimulatorScreen())), false),
+              _navBtn('', Icons.face_retouching_natural, () => Navigator.push(context, MaterialPageRoute(builder: (_) => const FaceBiasScreen())), false),
+              _navBtn('', Icons.public_rounded, () => Navigator.push(context, MaterialPageRoute(builder: (_) => const GlobalComplianceScreen())), false),
+            ] else ...[
+              PopupMenuButton<int>(
+                icon: const Icon(Icons.menu_rounded, color: Colors.white, size: 28),
+                color: const Color(0xFF1E1E2C),
+                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                itemBuilder: (context) => [
+                  PopupMenuItem(value: 0, child: Row(children: [const Icon(Icons.account_balance_rounded, color: Colors.white70), const SizedBox(width: 8), Text('Gov Dashboard', style: GoogleFonts.spaceGrotesk(color: Colors.white))])),
+                  PopupMenuItem(value: 1, child: Row(children: [const Icon(Icons.document_scanner, color: Colors.white70), const SizedBox(width: 8), Text('Text Bias', style: GoogleFonts.spaceGrotesk(color: Colors.white))])),
+                  PopupMenuItem(value: 2, child: Row(children: [const Icon(Icons.tune_rounded, color: Colors.white70), const SizedBox(width: 8), Text('Simulator', style: GoogleFonts.spaceGrotesk(color: Colors.white))])),
+                  PopupMenuItem(value: 3, child: Row(children: [const Icon(Icons.face_retouching_natural, color: Colors.white70), const SizedBox(width: 8), Text('Face Bias', style: GoogleFonts.spaceGrotesk(color: Colors.white))])),
+                  PopupMenuItem(value: 4, child: Row(children: [const Icon(Icons.public_rounded, color: Colors.white70), const SizedBox(width: 8), Text('Roadmap', style: GoogleFonts.spaceGrotesk(color: Colors.white))])),
+                ],
+                onSelected: (value) {
+                  if (value == 0) Navigator.push(context, MaterialPageRoute(builder: (_) => const GovDashboardScreen()));
+                  if (value == 1) Navigator.push(context, MaterialPageRoute(builder: (_) => const TextBiasScreen()));
+                  if (value == 2) Navigator.push(context, MaterialPageRoute(builder: (_) => const SimulatorScreen()));
+                  if (value == 3) Navigator.push(context, MaterialPageRoute(builder: (_) => const FaceBiasScreen()));
+                  if (value == 4) Navigator.push(context, MaterialPageRoute(builder: (_) => const GlobalComplianceScreen()));
+                },
+              ),
+            ],
+
             const SizedBox(width: 8),
-            IconButton(
-              icon: const Icon(Icons.logout_rounded, color: Colors.white54, size: 20),
-              onPressed: () async {
-                await AuthService().signOut();
-              },
-              tooltip: 'Sign Out',
-            ),
-            const SizedBox(width: 14),
-            _glowButton('Upload Dataset', Icons.upload_rounded, _pickAndAnalyze),
+            if (MediaQuery.of(context).size.width > 500)
+              IconButton(
+                icon: const Icon(Icons.logout_rounded, color: Colors.white54, size: 20),
+                onPressed: () async {
+                  await AuthService().signOut();
+                },
+                tooltip: 'Sign Out',
+              ),
+            if (MediaQuery.of(context).size.width > 500)
+              const SizedBox(width: 14),
+            
+            if (MediaQuery.of(context).size.width > 600)
+              _glowButton('Upload Dataset', Icons.upload_rounded, _pickAndAnalyze)
+            else
+              IconButton(
+                icon: const Icon(Icons.upload_rounded, color: Color(0xFF8B5CF6), size: 24),
+                onPressed: _pickAndAnalyze,
+              ),
           ]),
         ),
       ),
     ).animate().fadeIn(duration: 500.ms);
   }
 
-  Widget _navBtn(String label, IconData icon, VoidCallback onTap) =>
-    GestureDetector(
-      onTap: onTap,
-      child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 9),
-        decoration: BoxDecoration(
-          color: Colors.white.withValues(alpha: 0.04),
-          borderRadius: BorderRadius.circular(9),
-          border: Border.all(color: Colors.white.withValues(alpha: 0.08)),
-        ),
-        child: Row(mainAxisSize: MainAxisSize.min, children: [
-          Icon(icon, size: 14, color: Colors.white54),
-          const SizedBox(width: 6),
-          Text(label, style: GoogleFonts.spaceGrotesk(color: Colors.white54, fontSize: 13)),
-        ]),
-      ),
+  Widget _navBtn(String label, IconData icon, VoidCallback onTap, bool showText) {
+    bool isHover = false;
+    return StatefulBuilder(
+      builder: (context, setBtnState) {
+        return MouseRegion(
+          onEnter: (_) => setBtnState(() => isHover = true),
+          onExit: (_) => setBtnState(() => isHover = false),
+          child: GestureDetector(
+            onTap: onTap,
+            child: AnimatedContainer(
+              duration: const Duration(milliseconds: 200),
+              padding: EdgeInsets.symmetric(horizontal: showText ? 14 : 10, vertical: 9),
+              margin: const EdgeInsets.only(right: 8),
+              decoration: BoxDecoration(
+                color: isHover ? Colors.white.withValues(alpha: 0.1) : Colors.white.withValues(alpha: 0.04),
+                borderRadius: BorderRadius.circular(9),
+                border: Border.all(color: isHover ? const Color(0xFF818CF8).withValues(alpha: 0.5) : Colors.white.withValues(alpha: 0.08)),
+                boxShadow: isHover ? [BoxShadow(color: const Color(0xFF6366F1).withValues(alpha: 0.2), blurRadius: 12)] : [],
+              ),
+              child: Row(mainAxisSize: MainAxisSize.min, children: [
+                Icon(icon, size: 15, color: isHover ? const Color(0xFF818CF8) : Colors.white70),
+                if (showText) const SizedBox(width: 8),
+                if (showText) Text(label, style: GoogleFonts.spaceGrotesk(
+                  color: isHover ? Colors.white : Colors.white70, 
+                  fontSize: 13, 
+                  fontWeight: isHover ? FontWeight.bold : FontWeight.w500
+                )),
+              ]),
+            ),
+          ),
+        );
+      }
     );
+  }
+
 
   Widget _glowButton(String label, IconData icon, VoidCallback onTap) =>
     GestureDetector(
@@ -410,22 +465,27 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
 
       const SizedBox(height: 36),
 
-      Row(children: [
-        _heroCTA('Upload Dataset', Icons.cloud_upload_outlined, true, _pickAndAnalyze),
-        const SizedBox(width: 14),
-        _heroCTA('Try Sample Dataset', Icons.play_circle_outline_rounded, false, _pickAndAnalyze),
-      ]).animate().fadeIn(delay: 420.ms),
+      Wrap(
+        spacing: 14, 
+        runSpacing: 14,
+        children: [
+          _heroCTA('Upload Dataset', Icons.cloud_upload_outlined, true, _pickAndAnalyze),
+          _heroCTA('Try Sample Dataset', Icons.play_circle_outline_rounded, false, _pickAndAnalyze),
+        ]
+      ).animate().fadeIn(delay: 420.ms),
 
       const SizedBox(height: 36),
 
       // Trust row
-      Row(children: [
-        _trustChip(Icons.verified_rounded, 'GDPR Article 22', const Color(0xFF10B981)),
-        const SizedBox(width: 10),
-        _trustChip(Icons.gavel_rounded, 'Indian Law Mapped', const Color(0xFF6366F1)),
-        const SizedBox(width: 10),
-        _trustChip(Icons.psychology_rounded, 'Gemini Powered', const Color(0xFF8B5CF6)),
-      ]).animate().fadeIn(delay: 500.ms),
+      Wrap(
+        spacing: 10,
+        runSpacing: 10,
+        children: [
+          _trustChip(Icons.verified_rounded, 'GDPR Article 22', const Color(0xFF10B981)),
+          _trustChip(Icons.gavel_rounded, 'Indian Law Mapped', const Color(0xFF6366F1)),
+          _trustChip(Icons.psychology_rounded, 'Gemini Powered', const Color(0xFF8B5CF6)),
+        ]
+      ).animate().fadeIn(delay: 500.ms),
     ]);
   }
 
@@ -587,13 +647,10 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
     const SizedBox(height: 28),
 
     // Format hints
-    Row(mainAxisAlignment: MainAxisAlignment.center, children: [
+    Wrap(alignment: WrapAlignment.center, spacing: 10, runSpacing: 10, children: [
       _uploadHint(Icons.table_chart_rounded, 'CSV Format'),
-      const SizedBox(width: 12),
       _uploadHint(Icons.speed_rounded, '< 2 seconds'),
-      const SizedBox(width: 12),
       _uploadHint(Icons.lock_outline_rounded, 'Never stored'),
-      const SizedBox(width: 12),
       _uploadHint(Icons.psychology_rounded, 'Gemini AI'),
     ]),
     const SizedBox(height: 28),
@@ -653,50 +710,58 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
 
   // ── STATS ROW ────────────────────────────────────────────────
   Widget _buildStatsRow() {
+    final isDesktop = MediaQuery.of(context).size.width > 900;
     final stats = [
       ('500K+', 'Datasets Analyzed', const Color(0xFF6366F1), Icons.dataset_rounded),
       ('98.4%', 'Detection Accuracy', const Color(0xFF10B981), Icons.verified_rounded),
       ('12+', 'Bias Categories', const Color(0xFF8B5CF6), Icons.category_rounded),
       ('4', 'Laws Mapped', const Color(0xFFF59E0B), Icons.gavel_rounded),
     ];
-    return Row(
-      children: stats.asMap().entries.map((e) {
-        final s = e.value;
-        return Expanded(child: Container(
-          margin: EdgeInsets.only(left: e.key == 0 ? 0 : 12),
-          padding: const EdgeInsets.all(20),
-          decoration: BoxDecoration(
+    
+    final cards = stats.asMap().entries.map((e) {
+      final s = e.value;
+      return Container(
+        margin: EdgeInsets.only(
+          left: (isDesktop && e.key != 0) ? 12 : 0,
+          bottom: (!isDesktop) ? 12 : 0,
+        ),
+        padding: const EdgeInsets.all(20),
+        decoration: BoxDecoration(
+          color: s.$3.withValues(alpha: 0.06),
+          borderRadius: BorderRadius.circular(16),
+          border: Border.all(color: s.$3.withValues(alpha: 0.18)),
+          boxShadow: [BoxShadow(
             color: s.$3.withValues(alpha: 0.06),
-            borderRadius: BorderRadius.circular(16),
-            border: Border.all(color: s.$3.withValues(alpha: 0.18)),
-            boxShadow: [BoxShadow(
-              color: s.$3.withValues(alpha: 0.06),
-              blurRadius: 20, spreadRadius: 1,
-            )],
-          ),
-          child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-            Container(
-              width: 36, height: 36,
-              decoration: BoxDecoration(
-                color: s.$3.withValues(alpha: 0.12),
-                borderRadius: BorderRadius.circular(9),
-              ),
-              child: Icon(s.$4, color: s.$3, size: 18),
+            blurRadius: 20, spreadRadius: 1,
+          )],
+        ),
+        child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+          Container(
+            width: 36, height: 36,
+            decoration: BoxDecoration(
+              color: s.$3.withValues(alpha: 0.12),
+              borderRadius: BorderRadius.circular(9),
             ),
-            const SizedBox(height: 14),
-            Text(s.$1, style: GoogleFonts.spaceGrotesk(
-              color: Colors.white, fontSize: 26, fontWeight: FontWeight.w900)),
-            const SizedBox(height: 3),
-            Text(s.$2, style: GoogleFonts.spaceGrotesk(
-              color: Colors.white38, fontSize: 12)),
-          ]),
-        ));
-      }).toList(),
-    ).animate().fadeIn(delay: 150.ms);
+            child: Icon(s.$4, color: s.$3, size: 18),
+          ),
+          const SizedBox(height: 14),
+          Text(s.$1, style: GoogleFonts.spaceGrotesk(
+            color: Colors.white, fontSize: 26, fontWeight: FontWeight.w900)),
+          const SizedBox(height: 3),
+          Text(s.$2, style: GoogleFonts.spaceGrotesk(
+            color: Colors.white38, fontSize: 12)),
+        ]),
+      );
+    }).toList();
+
+    return isDesktop 
+      ? Row(children: cards.map((c) => Expanded(child: c)).toList()).animate().fadeIn(delay: 150.ms)
+      : Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: cards).animate().fadeIn(delay: 150.ms);
   }
 
   // ── FEATURE GRID ─────────────────────────────────────────────
   Widget _buildFeatureGrid() {
+    final isDesktop = MediaQuery.of(context).size.width > 900;
     final features = [
       (
         const Color(0xFF6366F1), Icons.manage_search_rounded, '🔍',
@@ -741,6 +806,23 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
         'One-click export',
       ),
     ];
+
+    if (!isDesktop) {
+      return Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          _sectionLabel('Capabilities'),
+          const SizedBox(height: 20),
+          ...features.asMap().entries.map((e) {
+            final f = e.value;
+            return Padding(
+              padding: const EdgeInsets.only(bottom: 12),
+              child: _simpleFeatureCard(f.$1, f.$2, f.$4, f.$5, f.$6, e.key, f.$7),
+            );
+          }),
+        ],
+      );
+    }
 
     return Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
       _sectionLabel('Capabilities'),
@@ -847,6 +929,7 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
 
   // ── HOW IT WORKS ─────────────────────────────────────────────
   Widget _buildHowItWorks() {
+    final isDesktop = MediaQuery.of(context).size.width > 900;
     final steps = [
       (const Color(0xFF6366F1), Icons.upload_file_rounded, '01', 'Upload Your CSV',
         'Drop any dataset — hiring data, loan applications, medical records, HR reviews or education data. Any CSV works.',
@@ -865,31 +948,58 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
     return Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
       _sectionLabel('How It Works'),
       const SizedBox(height: 24),
-      Row(crossAxisAlignment: CrossAxisAlignment.start,
-        children: steps.asMap().entries.map((e) {
-          final s = e.value;
-          final isLast = e.key == steps.length - 1;
-          return Expanded(child: Row(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Expanded(child: _StepCard(
-                color: s.$1,
-                icon: s.$2,
-                number: s.$3,
-                title: s.$4,
-                desc: s.$5,
-                metric: s.$6,
-                index: e.key,
-              )),
-              if (!isLast) Padding(
-                padding: const EdgeInsets.only(top: 28),
-                child: Icon(Icons.arrow_forward_rounded,
-                  color: Colors.white.withValues(alpha: 0.12), size: 22),
-              ),
-            ],
-          ));
-        }).toList(),
-      ),
+      if (isDesktop)
+        Row(crossAxisAlignment: CrossAxisAlignment.start,
+          children: steps.asMap().entries.map((e) {
+            final s = e.value;
+            final isLast = e.key == steps.length - 1;
+            return Expanded(child: Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Expanded(child: _StepCard(
+                  color: s.$1,
+                  icon: s.$2,
+                  number: s.$3,
+                  title: s.$4,
+                  desc: s.$5,
+                  metric: s.$6,
+                  index: e.key,
+                )),
+                if (!isLast) Padding(
+                  padding: const EdgeInsets.only(top: 28),
+                  child: Icon(Icons.arrow_forward_rounded,
+                    color: Colors.white.withValues(alpha: 0.12), size: 22),
+                ),
+              ],
+            ));
+          }).toList(),
+        )
+      else
+        Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: steps.asMap().entries.map((e) {
+            final s = e.value;
+            final isLast = e.key == steps.length - 1;
+            return Column(
+              children: [
+                _StepCard(
+                  color: s.$1,
+                  icon: s.$2,
+                  number: s.$3,
+                  title: s.$4,
+                  desc: s.$5,
+                  metric: s.$6,
+                  index: e.key,
+                ),
+                if (!isLast) Padding(
+                  padding: const EdgeInsets.symmetric(vertical: 12),
+                  child: Icon(Icons.arrow_downward_rounded,
+                    color: Colors.white.withValues(alpha: 0.12), size: 22),
+                ),
+              ],
+            );
+          }).toList(),
+        ),
     ]);
   }
 
@@ -957,7 +1067,7 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
   // ── SAMPLE DATASETS ──────────────────────────────────────────
   Widget _buildSampleDatasets() {
     final samples = [
-      ('👩‍💼', 'Hiring Dataset', 'Gender & age bias in tech hiring', const Color(0xFF6366F1), '72/100'),
+      ('👩\u200d💼', 'Hiring Dataset', 'Gender & age bias in tech hiring', const Color(0xFF6366F1), '72/100'),
       ('🏦', 'Loan Dataset', 'Caste & location bias in approvals', const Color(0xFF8B5CF6), '58/100'),
       ('🏥', 'Medical Dataset', 'Race bias in diagnosis rates', const Color(0xFF10B981), '34/100'),
       ('🎓', 'Education Dataset', 'Socioeconomic bias in admissions', const Color(0xFFF59E0B), '47/100'),
@@ -965,21 +1075,24 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
     return Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
       _sectionLabel('Try a Sample Dataset'),
       const SizedBox(height: 18),
-      GridView.count(
-        crossAxisCount: 4,
-        shrinkWrap: true,
-        physics: const NeverScrollableScrollPhysics(),
-        crossAxisSpacing: 12,
-        mainAxisSpacing: 12,
-        childAspectRatio: 1.3,
-        children: samples.map((s) => GestureDetector(
-          onTap: _pickAndAnalyze,
-          child: _SampleCard(
-            emoji: s.$1, title: s.$2,
-            desc: s.$3, color: s.$4, score: s.$5,
-          ),
-        )).toList(),
-      ),
+      LayoutBuilder(builder: (context, constraints) {
+        final cols = constraints.maxWidth < 500 ? 1 : constraints.maxWidth < 800 ? 2 : 4;
+        return GridView.count(
+          crossAxisCount: cols,
+          shrinkWrap: true,
+          physics: const NeverScrollableScrollPhysics(),
+          crossAxisSpacing: 12,
+          mainAxisSpacing: 12,
+          childAspectRatio: cols == 1 ? 2.5 : cols == 2 ? 1.6 : 1.3,
+          children: samples.map((s) => GestureDetector(
+            onTap: _pickAndAnalyze,
+            child: _SampleCard(
+              emoji: s.$1, title: s.$2,
+              desc: s.$3, color: s.$4, score: s.$5,
+            ),
+          )).toList(),
+        );
+      }),
     ]);
   }
 
@@ -999,8 +1112,10 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
             blurRadius: 30, spreadRadius: 2,
           )],
         ),
-        child: Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
-          Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+        child: LayoutBuilder(builder: (ctx, box) {
+          final isWide = box.maxWidth > 560;
+
+          final leftCol = Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
             Text('Integrate FairLens into\nyour CI/CD pipeline',
               style: GoogleFonts.spaceGrotesk(
                 color: Colors.white, fontSize: 22, fontWeight: FontWeight.w800, height: 1.3)),
@@ -1009,16 +1124,14 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
               style: GoogleFonts.spaceGrotesk(
                 color: Colors.white38, fontSize: 14, height: 1.6)),
             const SizedBox(height: 22),
-            Row(children: [
+            Wrap(spacing: 8, runSpacing: 8, children: [
               _trustChip(Icons.bolt_rounded, 'REST API', const Color(0xFF6366F1)),
-              const SizedBox(width: 8),
               _trustChip(Icons.code_rounded, 'Python SDK', const Color(0xFF10B981)),
-              const SizedBox(width: 8),
               _trustChip(Icons.webhook_rounded, 'Webhooks', const Color(0xFF8B5CF6)),
             ]),
-          ])),
-          const SizedBox(width: 32),
-          Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+          ]);
+          final rightCol = Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+
             Row(children: [
               Container(
                 padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
@@ -1029,8 +1142,9 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                   color: const Color(0xFF10B981), fontWeight: FontWeight.bold, fontSize: 11)),
               ),
               const SizedBox(width: 10),
-              Text('api.fairlens.dev/v1/analyze',
-                style: GoogleFonts.spaceMono(color: Colors.white54, fontSize: 12)),
+              Flexible(child: Text('api.fairlens.dev/v1/analyze',
+                overflow: TextOverflow.ellipsis,
+                style: GoogleFonts.spaceMono(color: Colors.white54, fontSize: 12))),
             ]),
             const SizedBox(height: 12),
             Container(
@@ -1050,8 +1164,18 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                 style: GoogleFonts.spaceMono(
                   color: const Color(0xFF818CF8), fontSize: 12, height: 1.6)),
             ),
-          ])),
-        ]),
+          ]);
+          return isWide
+            ? Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [leftCol])),
+                const SizedBox(width: 32),
+                Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [rightCol])),
+              ])
+            : Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                leftCol, const SizedBox(height: 24), rightCol,
+              ]);
+        }),
+
       ),
     ]).animate().fadeIn(delay: 100.ms);
   }
@@ -1061,8 +1185,9 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
     return Column(children: [
       Container(height: 1, color: Colors.white.withValues(alpha: 0.07)),
       const SizedBox(height: 30),
-      Row(mainAxisAlignment: MainAxisAlignment.spaceBetween, children: [
-        Row(children: [
+      LayoutBuilder(builder: (context, constraints) {
+        final isWide = constraints.maxWidth > 600;
+        final brand = Row(mainAxisSize: MainAxisSize.min, children: [
           Container(
             width: 28, height: 28,
             decoration: BoxDecoration(
@@ -1076,19 +1201,20 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
           Text('FairLens', style: GoogleFonts.spaceGrotesk(
             color: Colors.white54, fontSize: 14, fontWeight: FontWeight.w700)),
           const SizedBox(width: 12),
-          Text('Built for Google Solution Challenge 2026',
-            style: GoogleFonts.spaceGrotesk(color: Colors.white24, fontSize: 12)),
-        ]),
-        Row(children: [
+          Flexible(child: Text('Built for Google Solution Challenge 2026',
+            overflow: TextOverflow.ellipsis,
+            style: GoogleFonts.spaceGrotesk(color: Colors.white24, fontSize: 12))),
+        ]);
+        final links = Wrap(spacing: 20, runSpacing: 8, children: [
           _footerLink('GitHub'),
-          const SizedBox(width: 20),
           _footerLink('Docs'),
-          const SizedBox(width: 20),
           _footerLink('About'),
-          const SizedBox(width: 20),
           _footerLink('Privacy'),
-        ]),
-      ]),
+        ]);
+        return isWide
+          ? Row(mainAxisAlignment: MainAxisAlignment.spaceBetween, children: [Flexible(child: brand), links])
+          : Column(crossAxisAlignment: CrossAxisAlignment.start, children: [brand, const SizedBox(height: 16), links]);
+      }),
     ]);
   }
 
@@ -1096,79 +1222,10 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
     color: Colors.white30, fontSize: 12));
 
   Widget _buildAgenticAuditor() {
-    return Positioned(
+    return const Positioned(
       bottom: 32, right: 32,
-      child: _Tilt3DCard(
-        child: Container(
-          width: 280,
-          padding: const EdgeInsets.all(20),
-          decoration: BoxDecoration(
-            color: const Color(0xFF0D0D1A),
-            borderRadius: BorderRadius.circular(24),
-            border: Border.all(color: const Color(0xFF8B5CF6).withValues(alpha: 0.5), width: 1.5),
-            boxShadow: [
-              BoxShadow(color: const Color(0xFF8B5CF6).withValues(alpha: 0.2), blurRadius: 30, spreadRadius: -5)
-            ],
-          ),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Row(
-                children: [
-                  Container(
-                    padding: const EdgeInsets.all(8),
-                    decoration: const BoxDecoration(color: Color(0xFF8B5CF6), shape: BoxShape.circle),
-                    child: const Icon(Icons.psychology_rounded, color: Colors.white, size: 20),
-                  ),
-                  const SizedBox(width: 12),
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text('Agentic Auditor', style: GoogleFonts.spaceGrotesk(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 14)),
-                        const Text('Ready to explain findings...', style: TextStyle(color: Colors.white38, fontSize: 10)),
-                      ],
-                    ),
-                  ),
-                  const Icon(Icons.more_vert, color: Colors.white24, size: 16),
-                ],
-              ),
-              const SizedBox(height: 16),
-              Container(
-                padding: const EdgeInsets.all(12),
-                decoration: BoxDecoration(color: Colors.white.withValues(alpha: 0.03), borderRadius: BorderRadius.circular(12)),
-                child: const Text(
-                  '“Your recent CSV audit shows high risk in Geographic Bias. Shall we check compliance for India?”',
-                  style: TextStyle(color: Colors.white70, fontSize: 12, height: 1.5),
-                ),
-              ),
-              const SizedBox(height: 16),
-              Row(
-                children: [
-                  Expanded(
-                    child: Container(
-                      height: 36,
-                      padding: const EdgeInsets.symmetric(horizontal: 12),
-                      decoration: BoxDecoration(color: Colors.black, borderRadius: BorderRadius.circular(8)),
-                      child: const TextField(
-                        style: TextStyle(color: Colors.white, fontSize: 12),
-                        decoration: InputDecoration(hintText: 'Ask Auditor...', hintStyle: TextStyle(color: Colors.white24), border: InputBorder.none),
-                      ),
-                    ),
-                  ),
-                  const SizedBox(width: 8),
-                  Container(
-                    width: 36, height: 36,
-                    decoration: BoxDecoration(color: const Color(0xFF6366F1), borderRadius: BorderRadius.circular(8)),
-                    child: const Icon(Icons.send_rounded, color: Colors.white, size: 16),
-                  ),
-                ],
-              )
-            ],
-          ),
-        ),
-      ),
-    ).animate().fadeIn(delay: 1000.ms).slideY(begin: 0.5);
+      child: _AgenticAuditorWidget(),
+    );
   }
 
   // ── HELPERS ──────────────────────────────────────────────────
@@ -1211,6 +1268,368 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
       ),
     ),
   );
+}
+
+// ════════════════════════════════════════════════════════════
+//  AGENTIC AUDITOR — floating AI chat assistant
+// ════════════════════════════════════════════════════════════
+class _AgenticAuditorWidget extends StatefulWidget {
+  const _AgenticAuditorWidget();
+  @override
+  State<_AgenticAuditorWidget> createState() => _AgenticAuditorWidgetState();
+}
+
+class _AgenticAuditorWidgetState extends State<_AgenticAuditorWidget>
+    with TickerProviderStateMixin {
+  bool _isExpanded = false;
+  bool _isLoading = false;
+
+  final TextEditingController _inputCtrl = TextEditingController();
+  final ScrollController _scrollCtrl = ScrollController();
+  final List<Map<String, String>> _messages = [
+    {'role': 'model', 'text': 'Hi! I\'m your Agentic Auditor — ask me anything about AI fairness, bias types, or legal compliance.'},
+  ];
+
+  late AnimationController _pulseCtrl;
+  Timer? _idleTimer;
+
+  @override
+  void initState() {
+    super.initState();
+    _pulseCtrl = AnimationController(
+      vsync: this, duration: const Duration(seconds: 2),
+    )..repeat(reverse: true);
+  }
+
+  @override
+  void dispose() {
+    _idleTimer?.cancel();
+    _inputCtrl.dispose();
+    _scrollCtrl.dispose();
+    _pulseCtrl.dispose();
+    super.dispose();
+  }
+
+  // ── Idle collapse: collapse after 30 s of inactivity ──────
+  void _resetIdleTimer() {
+    _idleTimer?.cancel();
+    _idleTimer = Timer(const Duration(seconds: 30), () {
+      if (mounted) setState(() => _isExpanded = false);
+    });
+  }
+
+  void _open() {
+    setState(() => _isExpanded = true);
+    _resetIdleTimer();
+    _scrollToBottom();
+  }
+
+  // ── Send message ──────────────────────────────────────────
+  Future<void> _send() async {
+    final text = _inputCtrl.text.trim();
+    if (text.isEmpty || _isLoading) return;
+    _inputCtrl.clear();
+    _resetIdleTimer();
+    setState(() {
+      _messages.add({'role': 'user', 'text': text});
+      _isLoading = true;
+    });
+    _scrollToBottom();
+
+    final reply = await GeminiService.chatGeneral(
+      text,
+      List<Map<String, String>>.from(
+        _messages.sublist(0, _messages.length - 1),
+      ),
+    );
+
+    if (mounted) {
+      setState(() {
+        _messages.add({'role': 'model', 'text': reply});
+        _isLoading = false;
+      });
+      _scrollToBottom();
+      _resetIdleTimer();
+    }
+  }
+
+  void _scrollToBottom() {
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (_scrollCtrl.hasClients) {
+        _scrollCtrl.animateTo(
+          _scrollCtrl.position.maxScrollExtent,
+          duration: const Duration(milliseconds: 300),
+          curve: Curves.easeOut,
+        );
+      }
+    });
+  }
+
+  // ── Build ─────────────────────────────────────────────────
+  @override
+  Widget build(BuildContext context) {
+    return _isExpanded ? _buildPanel() : _buildFab();
+  }
+
+  // Collapsed FAB ───────────────────────────────────────────
+  Widget _buildFab() {
+    return GestureDetector(
+      onTap: _open,
+      child: AnimatedBuilder(
+        animation: _pulseCtrl,
+        builder: (_, __) => Container(
+          width: 58, height: 58,
+          decoration: BoxDecoration(
+            shape: BoxShape.circle,
+            gradient: const LinearGradient(
+              colors: [Color(0xFF6366F1), Color(0xFF8B5CF6)],
+              begin: Alignment.topLeft, end: Alignment.bottomRight,
+            ),
+            boxShadow: [BoxShadow(
+              color: const Color(0xFF8B5CF6).withValues(
+                  alpha: 0.3 + 0.35 * _pulseCtrl.value),
+              blurRadius: 16 + 14 * _pulseCtrl.value,
+              spreadRadius: 2,
+            )],
+          ),
+          child: const Icon(Icons.psychology_rounded, color: Colors.white, size: 28),
+        ),
+      ),
+    ).animate().fadeIn(delay: 1000.ms).scale(begin: const Offset(0.5, 0.5));
+  }
+
+  // Expanded panel ──────────────────────────────────────────
+  Widget _buildPanel() {
+    return Container(
+      width: 320, height: 460,
+      decoration: BoxDecoration(
+        color: const Color(0xFF0D0D1A),
+        borderRadius: BorderRadius.circular(24),
+        border: Border.all(
+            color: const Color(0xFF8B5CF6).withValues(alpha: 0.5), width: 1.5),
+        boxShadow: [BoxShadow(
+          color: const Color(0xFF8B5CF6).withValues(alpha: 0.25),
+          blurRadius: 40, spreadRadius: -5,
+        )],
+      ),
+      child: ClipRRect(
+        borderRadius: BorderRadius.circular(24),
+        child: Column(
+          children: [
+            _buildHeader(),
+            Expanded(child: _buildMessages()),
+            _buildInput(),
+          ],
+        ),
+      ),
+    ).animate().fadeIn(duration: 250.ms).slideY(begin: 0.15);
+  }
+
+  Widget _buildHeader() {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+      decoration: BoxDecoration(
+        color: const Color(0xFF8B5CF6).withValues(alpha: 0.08),
+        border: Border(
+          bottom: BorderSide(
+              color: const Color(0xFF8B5CF6).withValues(alpha: 0.2)),
+        ),
+      ),
+      child: Row(
+        children: [
+          AnimatedBuilder(
+            animation: _pulseCtrl,
+            builder: (_, __) => Container(
+              width: 36, height: 36,
+              decoration: BoxDecoration(
+                shape: BoxShape.circle,
+                gradient: const LinearGradient(
+                    colors: [Color(0xFF6366F1), Color(0xFF8B5CF6)]),
+                boxShadow: [BoxShadow(
+                  color: const Color(0xFF8B5CF6).withValues(
+                      alpha: 0.3 + 0.2 * _pulseCtrl.value),
+                  blurRadius: 8 + 4 * _pulseCtrl.value,
+                )],
+              ),
+              child: const Icon(Icons.psychology_rounded,
+                  color: Colors.white, size: 18),
+            ),
+          ),
+          const SizedBox(width: 10),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text('Agentic Auditor',
+                    style: GoogleFonts.spaceGrotesk(
+                        color: Colors.white,
+                        fontWeight: FontWeight.bold,
+                        fontSize: 13)),
+                Text('AI Fairness Assistant',
+                    style: GoogleFonts.spaceGrotesk(
+                        color: Colors.white38, fontSize: 10)),
+              ],
+            ),
+          ),
+          GestureDetector(
+            onTap: () {
+              _idleTimer?.cancel();
+              setState(() => _isExpanded = false);
+            },
+            child: Container(
+              padding: const EdgeInsets.all(6),
+              decoration: BoxDecoration(
+                color: Colors.white.withValues(alpha: 0.06),
+                shape: BoxShape.circle,
+              ),
+              child: const Icon(Icons.keyboard_arrow_down_rounded,
+                  color: Colors.white54, size: 16),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildMessages() {
+    return ListView.builder(
+      controller: _scrollCtrl,
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+      itemCount: _messages.length + (_isLoading ? 1 : 0),
+      itemBuilder: (_, i) {
+        // Typing indicator
+        if (i == _messages.length) {
+          return Align(
+            alignment: Alignment.centerLeft,
+            child: Container(
+              margin: const EdgeInsets.only(bottom: 8),
+              padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+              decoration: BoxDecoration(
+                color: const Color(0xFF8B5CF6).withValues(alpha: 0.1),
+                borderRadius: BorderRadius.circular(14),
+              ),
+              child: AnimatedBuilder(
+                animation: _pulseCtrl,
+                builder: (_, __) => Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: List.generate(3, (j) {
+                    final phase = ((_pulseCtrl.value + j / 3.0) % 1.0);
+                    final opacity = phase < 0.5 ? phase * 2 : (1 - phase) * 2;
+                    return Container(
+                      width: 6, height: 6,
+                      margin: const EdgeInsets.symmetric(horizontal: 2),
+                      decoration: BoxDecoration(
+                        shape: BoxShape.circle,
+                        color: const Color(0xFF8B5CF6)
+                            .withValues(alpha: 0.3 + 0.7 * opacity),
+                      ),
+                    );
+                  }),
+                ),
+              ),
+            ),
+          );
+        }
+
+        final msg = _messages[i];
+        final isUser = msg['role'] == 'user';
+        return Align(
+          alignment:
+              isUser ? Alignment.centerRight : Alignment.centerLeft,
+          child: Container(
+            margin: const EdgeInsets.only(bottom: 8),
+            constraints: const BoxConstraints(maxWidth: 244),
+            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+            decoration: BoxDecoration(
+              gradient: isUser
+                  ? const LinearGradient(
+                      colors: [Color(0xFF6366F1), Color(0xFF8B5CF6)])
+                  : null,
+              color: isUser
+                  ? null
+                  : Colors.white.withValues(alpha: 0.05),
+              borderRadius: BorderRadius.only(
+                topLeft: const Radius.circular(14),
+                topRight: const Radius.circular(14),
+                bottomLeft: Radius.circular(isUser ? 14 : 4),
+                bottomRight: Radius.circular(isUser ? 4 : 14),
+              ),
+            ),
+            child: Text(
+              msg['text'] ?? '',
+              style: GoogleFonts.spaceGrotesk(
+                color: isUser ? Colors.white : Colors.white70,
+                fontSize: 12, height: 1.5,
+              ),
+            ),
+          ),
+        );
+      },
+    );
+  }
+
+  Widget _buildInput() {
+    return Container(
+      padding: const EdgeInsets.all(10),
+      decoration: BoxDecoration(
+        border: Border(
+          top: BorderSide(color: Colors.white.withValues(alpha: 0.07)),
+        ),
+      ),
+      child: Row(
+        children: [
+          Expanded(
+            child: Container(
+              padding: const EdgeInsets.symmetric(horizontal: 12),
+              decoration: BoxDecoration(
+                color: Colors.white.withValues(alpha: 0.05),
+                borderRadius: BorderRadius.circular(12),
+                border:
+                    Border.all(color: Colors.white.withValues(alpha: 0.1)),
+              ),
+              child: TextField(
+                controller: _inputCtrl,
+                onTap: _resetIdleTimer,
+                onSubmitted: (_) => _send(),
+                style: GoogleFonts.spaceGrotesk(
+                    color: Colors.white, fontSize: 12),
+                decoration: InputDecoration(
+                  hintText: 'Ask about AI fairness...',
+                  hintStyle: GoogleFonts.spaceGrotesk(
+                      color: Colors.white24, fontSize: 12),
+                  border: InputBorder.none,
+                  contentPadding:
+                      const EdgeInsets.symmetric(vertical: 10),
+                ),
+              ),
+            ),
+          ),
+          const SizedBox(width: 8),
+          GestureDetector(
+            onTap: _send,
+            child: AnimatedBuilder(
+              animation: _pulseCtrl,
+              builder: (_, __) => Container(
+                width: 38, height: 38,
+                decoration: BoxDecoration(
+                  gradient: const LinearGradient(
+                      colors: [Color(0xFF6366F1), Color(0xFF8B5CF6)]),
+                  borderRadius: BorderRadius.circular(10),
+                  boxShadow: [BoxShadow(
+                    color: const Color(0xFF6366F1).withValues(
+                        alpha: 0.3 + 0.2 * _pulseCtrl.value),
+                    blurRadius: 10,
+                  )],
+                ),
+                child: const Icon(Icons.send_rounded,
+                    color: Colors.white, size: 16),
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
 }
 
 // ══════════════════════════════════════════════════════════════

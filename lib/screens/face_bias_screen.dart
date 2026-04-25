@@ -1,10 +1,9 @@
+import 'dart:typed_data';
 import 'package:flutter/material.dart';
 import 'package:file_picker/file_picker.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import 'package:google_fonts/google_fonts.dart';
-import 'dart:ui';
-import 'dart:math';
-import 'dart:typed_data';
+import '../services/vision_service.dart';
 
 class FaceBiasScreen extends StatefulWidget {
   const FaceBiasScreen({super.key});
@@ -12,465 +11,458 @@ class FaceBiasScreen extends StatefulWidget {
   State<FaceBiasScreen> createState() => _FaceBiasScreenState();
 }
 
-class _FaceBiasScreenState extends State<FaceBiasScreen> with SingleTickerProviderStateMixin {
-  bool _isLoading = false;
-  bool _showResults = false;
-  bool _showAlert = false;
-  Uint8List? _imageBytes;
-  String? _imageName;
-  
-  // Advanced Simulation Data
-  int _biasScore = 0;
-  String _severity = 'Safe';
-  bool _showHeatmap = false;
-  bool _isStressTesting = false;
-  double _robustnessScore = 94.0;
-  
-  final List<String> _biometricFlags = [
-    'Emotion Recognition (EU AI Act Restricted)',
-    'Biometric Categorization (High Risk)',
-    'Demographic Skew: Darker Skin Tones',
-  ];
+class _FaceBiasScreenState extends State<FaceBiasScreen> {
+  // ── State ─────────────────────────────────────────────────────
+  int _step = 0; // 0=setup, 1=upload, 2=running, 3=results
 
-  void _pickImage() async {
-    final result = await FilePicker.platform.pickFiles(
+  final _groupANameCtrl = TextEditingController(text: 'Lighter Skin Tones');
+  final _groupBNameCtrl = TextEditingController(text: 'Darker Skin Tones');
+
+  List<({Uint8List bytes, String name})> _groupAImages = [];
+  List<({Uint8List bytes, String name})> _groupBImages = [];
+
+  int _progressDone = 0;
+  int _progressTotal = 0;
+
+  FaceAuditResult? _result;
+  String? _error;
+
+  // ── Image Picking ─────────────────────────────────────────────
+  Future<void> _pickImages(bool isGroupA) async {
+    final picked = await FilePicker.platform.pickFiles(
       type: FileType.image,
+      allowMultiple: true,
       withData: true,
     );
+    if (picked == null) return;
+    final imgs = picked.files
+        .where((f) => f.bytes != null)
+        .map((f) => (bytes: f.bytes!, name: f.name))
+        .toList();
+    setState(() {
+      if (isGroupA) _groupAImages = imgs;
+      else _groupBImages = imgs;
+    });
+  }
 
-    if (result != null && result.files.isNotEmpty) {
-      setState(() {
-        _imageBytes = result.files.first.bytes;
-        _imageName = result.files.first.name;
-        _showResults = false;
-        _showAlert = false;
-        _showHeatmap = false;
-      });
+  // ── Run Analysis ──────────────────────────────────────────────
+  Future<void> _runAnalysis() async {
+    setState(() { _step = 2; _progressDone = 0; _progressTotal = _groupAImages.length + _groupBImages.length; _error = null; });
+
+    try {
+      final statsA = await VisionService.analyzeGroup(
+        _groupAImages, _groupANameCtrl.text,
+        (done, total) => setState(() => _progressDone = done),
+      );
+      final statsB = await VisionService.analyzeGroup(
+        _groupBImages, _groupBNameCtrl.text,
+        (done, total) => setState(() => _progressDone = _groupAImages.length + done),
+      );
+      final audit = VisionService.computeAudit(statsA, statsB);
+      setState(() { _result = audit; _step = 3; });
+    } catch (e) {
+      setState(() { _error = e.toString(); _step = 1; });
     }
   }
 
-  void _analyzeImage() async {
-    if (_imageBytes == null) return;
-    
-    setState(() {
-      _isLoading = true;
-      _showResults = false;
-      _showAlert = false;
-    });
-
-    await Future.delayed(const Duration(seconds: 3));
-
-    if (!mounted) return;
-
-    setState(() {
-      _isLoading = false;
-      _biasScore = 68 + Random().nextInt(20);
-      _severity = _biasScore >= 80 ? 'Critical' : 'High';
-      _showResults = true;
-      _showHeatmap = true;
-    });
-
-    Future.delayed(const Duration(milliseconds: 500), () {
-      if (mounted && _biasScore >= 60) {
-        setState(() => _showAlert = true);
-      }
-    });
-  }
-
-  void _runStressTest() async {
-    setState(() => _isStressTesting = true);
-    await Future.delayed(const Duration(seconds: 2));
-    setState(() {
-      _isStressTesting = false;
-      _robustnessScore = 42.0; // Simulated drop
-      _biasScore += 12;
-      _severity = 'Critical';
-    });
-  }
-
-  Color _getSeverityColor() {
-    if (_biasScore >= 80) return const Color(0xFFEF4444);
-    if (_biasScore >= 60) return const Color(0xFFF59E0B);
-    if (_biasScore >= 30) return const Color(0xFF3B82F6);
-    return const Color(0xFF10B981);
-  }
-
+  // ── Build ─────────────────────────────────────────────────────
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: const Color(0xFF04040C),
-      body: Stack(
-        children: [
-          // Background
-          Positioned.fill(
-            child: Container(
-              decoration: const BoxDecoration(
-                gradient: LinearGradient(
-                  colors: [Color(0xFF04040C), Color(0xFF0D0D1A)],
-                  begin: Alignment.topCenter,
-                  end: Alignment.bottomCenter,
-                ),
+      appBar: AppBar(
+        backgroundColor: Colors.transparent,
+        elevation: 0,
+        leading: IconButton(
+          icon: const Icon(Icons.arrow_back_ios_new_rounded, color: Colors.white, size: 20),
+          onPressed: () => Navigator.pop(context),
+        ),
+        title: Text('Biometric Bias Auditor', style: GoogleFonts.spaceGrotesk(color: Colors.white, fontWeight: FontWeight.bold)),
+        actions: [
+          if (!VisionService.hasApiKey)
+            Container(
+              margin: const EdgeInsets.only(right: 16),
+              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+              decoration: BoxDecoration(
+                color: const Color(0xFFF59E0B).withOpacity(0.1),
+                borderRadius: BorderRadius.circular(6),
+                border: Border.all(color: const Color(0xFFF59E0B).withOpacity(0.3)),
               ),
-            ),
-          ),
-          
-          CustomScrollView(
-            slivers: [
-              _buildAppBar(),
-              SliverToBoxAdapter(
-                child: Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 20),
-                  child: Column(
-                    children: [
-                      _buildHeader(),
-                      const SizedBox(height: 40),
-                      if (!_showResults) _buildUploadSection(),
-                      if (_showResults) _buildAdvancedDashboard(),
-                      const SizedBox(height: 60),
-                    ],
-                  ),
-                ),
+              child: Text('ADD VISION_KEY TO .env', style: GoogleFonts.jetBrainsMono(color: const Color(0xFFF59E0B), fontSize: 9, fontWeight: FontWeight.bold)),
+            )
+          else
+            Container(
+              margin: const EdgeInsets.only(right: 16),
+              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+              decoration: BoxDecoration(
+                color: const Color(0xFF10B981).withOpacity(0.1),
+                borderRadius: BorderRadius.circular(6),
+                border: Border.all(color: const Color(0xFF10B981).withOpacity(0.3)),
               ),
-            ],
-          ),
-
-          if (_showAlert)
-            Positioned(
-              top: 80, left: 24, right: 24,
-              child: _buildAlertBanner().animate().slideY(begin: -2.0, curve: Curves.easeOutBack),
+              child: Text('VISION API CONNECTED', style: GoogleFonts.jetBrainsMono(color: const Color(0xFF10B981), fontSize: 9, fontWeight: FontWeight.bold)),
             ),
         ],
+      ),
+      body: SingleChildScrollView(
+        padding: const EdgeInsets.all(24),
+        child: [
+          _buildSetupStep(),
+          _buildUploadStep(),
+          _buildRunningStep(),
+          _buildResultsStep(),
+        ][_step],
       ),
     );
   }
 
-  Widget _buildAppBar() {
-    return SliverAppBar(
-      backgroundColor: Colors.transparent,
-      elevation: 0,
-      leading: IconButton(
-        icon: const Icon(Icons.arrow_back_ios_new_rounded, color: Colors.white, size: 20),
-        onPressed: () => Navigator.pop(context),
+  // ── Step 0: Setup ─────────────────────────────────────────────
+  Widget _buildSetupStep() {
+    return Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+      _heading('How This Works'),
+      const SizedBox(height: 12),
+      _infoCard(
+        'Real Detection, Real Math',
+        'Upload photos for two demographic groups. FairLens sends each image to '
+        'Google Cloud Vision API, gets the real face detection confidence score, '
+        'then computes Disparate Impact Ratio across groups — the same metric used '
+        'in the Gender Shades academic audit by Buolamwini & Gebru (2018).',
+        const Color(0xFF6366F1),
+        Icons.science_rounded,
       ),
-      actions: [
-        if (_showResults)
-          TextButton.icon(
-            onPressed: _runStressTest,
-            icon: Icon(_isStressTesting ? Icons.hourglass_empty : Icons.bolt, color: Colors.yellowAccent, size: 18),
-            label: Text(_isStressTesting ? 'STRESS TESTING...' : 'RUN STRESS TEST', 
-              style: GoogleFonts.spaceGrotesk(color: Colors.yellowAccent, fontWeight: FontWeight.bold, fontSize: 12)),
-          ),
+      const SizedBox(height: 16),
+      _infoCard(
+        'What Google Vision Returns (Real)',
+        '• detectionConfidence — how certain it found a face (0–1)\n'
+        '• landmarkingConfidence — accuracy of eye/nose/mouth mapping (0–1)\n'
+        '• faceDetected — whether any face was found at all\n\n'
+        'Bias = disparity in these scores across demographic groups.',
+        const Color(0xFF10B981),
+        Icons.data_object_rounded,
+      ),
+      const SizedBox(height: 32),
+      Text('Name Your Groups', style: GoogleFonts.spaceGrotesk(color: Colors.white, fontSize: 18, fontWeight: FontWeight.bold)),
+      const SizedBox(height: 16),
+      _textField(_groupANameCtrl, 'Group A label (e.g. "Female Faces")', const Color(0xFF6366F1)),
+      const SizedBox(height: 12),
+      _textField(_groupBNameCtrl, 'Group B label (e.g. "Male Faces")', const Color(0xFF8B5CF6)),
+      const SizedBox(height: 32),
+      _primaryButton('Next: Upload Images →', () => setState(() => _step = 1)),
+    ]).animate().fadeIn();
+  }
+
+  // ── Step 1: Upload ────────────────────────────────────────────
+  Widget _buildUploadStep() {
+    final canRun = _groupAImages.isNotEmpty && _groupBImages.isNotEmpty;
+    return Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+      _heading('Upload Image Sets'),
+      const SizedBox(height: 8),
+      Text('Upload at least 3–5 images per group for meaningful statistics.',
+        style: const TextStyle(color: Colors.white38, fontSize: 13)),
+      const SizedBox(height: 24),
+      Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
+        Expanded(child: _uploadSlot(_groupANameCtrl.text, _groupAImages, const Color(0xFF6366F1), () => _pickImages(true))),
         const SizedBox(width: 16),
+        Expanded(child: _uploadSlot(_groupBNameCtrl.text, _groupBImages, const Color(0xFF8B5CF6), () => _pickImages(false))),
+      ]),
+      if (_error != null) ...[
+        const SizedBox(height: 16),
+        _errorCard(_error!),
       ],
-    );
+      const SizedBox(height: 24),
+      Row(children: [
+        _secondaryButton('← Back', () => setState(() => _step = 0)),
+        const SizedBox(width: 12),
+        Expanded(child: _primaryButton(
+          canRun ? 'Run Bias Audit →' : 'Upload images for both groups',
+          canRun ? _runAnalysis : null,
+        )),
+      ]),
+    ]).animate().fadeIn();
   }
 
-  Widget _buildHeader() {
-    return Column(
-      children: [
-        Text('Biometric Bias Auditor', style: GoogleFonts.spaceGrotesk(
-          color: Colors.white, fontSize: 36, fontWeight: FontWeight.w900,
-        )).animate().fadeIn().slideY(begin: -0.2),
-        const SizedBox(height: 12),
-        Text('Detect algorithmic exclusion in facial recognition & vision models.',
-          style: GoogleFonts.spaceGrotesk(color: Colors.white54, fontSize: 16),
-          textAlign: TextAlign.center,
-        ).animate().fadeIn(delay: 100.ms),
-      ],
-    );
-  }
-
-  Widget _buildUploadSection() {
-    return _Tilt3DCard(
-      child: GestureDetector(
-        onTap: _isLoading ? null : _pickImage,
-        child: Container(
-          width: double.infinity,
-          height: 350,
-          decoration: BoxDecoration(
-            color: const Color(0xFF0D0D1A),
-            borderRadius: BorderRadius.circular(24),
-            border: Border.all(color: const Color(0xFF6366F1).withOpacity(0.3), width: 1.5),
-            boxShadow: [
-              BoxShadow(color: const Color(0xFF6366F1).withOpacity(0.1), blurRadius: 40)
-            ],
-          ),
-          child: _imageBytes == null 
-            ? Column(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  const Icon(Icons.face_retouching_natural, size: 64, color: Color(0xFF818CF8)),
-                  const SizedBox(height: 24),
-                  Text('Upload Visual Asset', style: GoogleFonts.spaceGrotesk(color: Colors.white, fontSize: 20, fontWeight: FontWeight.bold)),
-                  const SizedBox(height: 8),
-                  const Text('PNG, JPG or WEBP for Fairness Audit', style: TextStyle(color: Colors.white24, fontSize: 12)),
-                ],
-              )
-            : Stack(
-                fit: StackFit.expand,
-                children: [
-                  ClipRRect(borderRadius: BorderRadius.circular(24), child: Image.memory(_imageBytes!, fit: BoxFit.cover)),
-                  if (_isLoading)
-                    Container(
-                      color: Colors.black54,
-                      child: Center(
-                        child: Column(
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            const CircularProgressIndicator(color: Color(0xFF8B5CF6)),
-                            const SizedBox(height: 20),
-                            Text('Scanning Biometric Landmarks...', style: GoogleFonts.jetBrainsMono(color: Colors.white, fontSize: 12)),
-                          ],
-                        ),
-                      ),
-                    ),
-                ],
-              ),
+  Widget _uploadSlot(String label, List images, Color color, VoidCallback onTap) {
+    return GestureDetector(
+      onTap: onTap,
+      child: Container(
+        padding: const EdgeInsets.all(20),
+        decoration: BoxDecoration(
+          color: color.withOpacity(0.04),
+          borderRadius: BorderRadius.circular(16),
+          border: Border.all(color: color.withOpacity(0.25)),
         ),
-      ),
-    );
-  }
-
-  Widget _buildAdvancedDashboard() {
-    return Column(
-      children: [
-        Row(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Expanded(flex: 3, child: _buildHeatmapPreview()),
-            const SizedBox(width: 24),
-            Expanded(flex: 2, child: _buildQuickStats()),
+        child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+          Row(children: [
+            Icon(Icons.group_rounded, color: color, size: 18),
+            const SizedBox(width: 8),
+            Expanded(child: Text(label, style: GoogleFonts.spaceGrotesk(color: Colors.white, fontSize: 14, fontWeight: FontWeight.bold))),
+          ]),
+          const SizedBox(height: 16),
+          if (images.isEmpty) ...[
+            Container(
+              height: 100,
+              decoration: BoxDecoration(
+                color: color.withOpacity(0.06),
+                borderRadius: BorderRadius.circular(12),
+                border: Border.all(color: color.withOpacity(0.2), style: BorderStyle.solid),
+              ),
+              child: Center(child: Column(mainAxisSize: MainAxisSize.min, children: [
+                Icon(Icons.upload_file_rounded, color: color.withOpacity(0.6), size: 28),
+                const SizedBox(height: 8),
+                Text('Tap to select images', style: TextStyle(color: color.withOpacity(0.6), fontSize: 12)),
+              ])),
+            ),
+          ] else ...[
+            Container(
+              padding: const EdgeInsets.all(12),
+              decoration: BoxDecoration(color: color.withOpacity(0.1), borderRadius: BorderRadius.circular(10)),
+              child: Row(children: [
+                Icon(Icons.check_circle_rounded, color: color, size: 18),
+                const SizedBox(width: 8),
+                Text('${images.length} image${images.length == 1 ? "" : "s"} selected',
+                  style: GoogleFonts.spaceGrotesk(color: color, fontSize: 13, fontWeight: FontWeight.bold)),
+              ]),
+            ),
+            const SizedBox(height: 8),
+            ...images.take(3).map((img) => Padding(
+              padding: const EdgeInsets.only(bottom: 4),
+              child: Text('• ${img.name}', style: const TextStyle(color: Colors.white38, fontSize: 11), overflow: TextOverflow.ellipsis),
+            )),
+            if (images.length > 3)
+              Text('  +${images.length - 3} more', style: TextStyle(color: color.withOpacity(0.5), fontSize: 11)),
           ],
-        ),
-        const SizedBox(height: 24),
-        _buildComplianceModule(),
-        const SizedBox(height: 24),
-        _buildAdversarialReport(),
-      ],
-    ).animate().fadeIn().slideY(begin: 0.1);
-  }
-
-  Widget _buildHeatmapPreview() {
-    return Container(
-      height: 400,
-      decoration: BoxDecoration(
-        borderRadius: BorderRadius.circular(24),
-        border: Border.all(color: _getSeverityColor().withOpacity(0.5)),
-        image: DecorationImage(image: MemoryImage(_imageBytes!), fit: BoxFit.cover),
-      ),
-      child: Stack(
-        children: [
-          if (_showHeatmap)
-            Opacity(
-              opacity: 0.6,
-              child: Container(
-                decoration: BoxDecoration(
-                  borderRadius: BorderRadius.circular(24),
-                  gradient: RadialGradient(
-                    center: const Alignment(0, -0.2),
-                    radius: 0.8,
-                    colors: [Colors.red.withOpacity(0.8), Colors.orange.withOpacity(0.4), Colors.transparent],
-                  ),
-                ),
-              ),
-            ),
-          Positioned(
-            bottom: 20, left: 20,
-            child: Container(
-              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-              decoration: BoxDecoration(color: Colors.black87, borderRadius: BorderRadius.circular(8)),
-              child: Text('AI ATTENTION HEATMAP', style: GoogleFonts.jetBrainsMono(color: Colors.white, fontSize: 10, fontWeight: FontWeight.bold)),
-            ),
-          ),
-          _buildLandmarkOverlay(),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildLandmarkOverlay() {
-    return CustomPaint(
-      painter: _LandmarkPainter(Random().nextInt(100)),
-      size: Size.infinite,
-    );
-  }
-
-  Widget _buildQuickStats() {
-    return Column(
-      children: [
-        _statBox('BIAS SCORE', '$_biasScore%', _getSeverityColor()),
-        const SizedBox(height: 16),
-        _statBox('ROBUSTNESS', '${_robustnessScore.toInt()}%', _robustnessScore > 60 ? const Color(0xFF10B981) : const Color(0xFFEF4444)),
-        const SizedBox(height: 16),
-        Container(
-          padding: const EdgeInsets.all(20),
-          decoration: BoxDecoration(color: const Color(0xFF0D0D1A), borderRadius: BorderRadius.circular(20), border: Border.all(color: Colors.white12)),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text('Inclusion Gaps', style: GoogleFonts.spaceGrotesk(color: Colors.white, fontWeight: FontWeight.bold)),
-              const SizedBox(height: 12),
-              _gapItem('Darker Tones', -18),
-              _gapItem('Female Faces', -12),
-              _gapItem('Older Age', -4),
-            ],
-          ),
-        ),
-      ],
-    );
-  }
-
-  Widget _statBox(String label, String val, Color color) {
-    return Container(
-      width: double.infinity,
-      padding: const EdgeInsets.all(24),
-      decoration: BoxDecoration(color: color.withOpacity(0.05), borderRadius: BorderRadius.circular(20), border: Border.all(color: color.withOpacity(0.3))),
-      child: Column(
-        children: [
-          Text(label, style: GoogleFonts.jetBrainsMono(color: Colors.white38, fontSize: 10, fontWeight: FontWeight.bold)),
-          const SizedBox(height: 8),
-          Text(val, style: GoogleFonts.spaceGrotesk(color: color, fontSize: 32, fontWeight: FontWeight.bold)),
-        ],
-      ),
-    );
-  }
-
-  Widget _gapItem(String label, int val) {
-    return Padding(
-      padding: const EdgeInsets.only(bottom: 8.0),
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-        children: [
-          Text(label, style: const TextStyle(color: Colors.white54, fontSize: 12)),
-          Text('$val%', style: TextStyle(color: val < 0 ? const Color(0xFFEF4444) : Colors.greenAccent, fontWeight: FontWeight.bold, fontSize: 12)),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildComplianceModule() {
-    return Container(
-      width: double.infinity,
-      padding: const EdgeInsets.all(24),
-      decoration: BoxDecoration(color: const Color(0xFF0D0D1A), borderRadius: BorderRadius.circular(20), border: Border.all(color: const Color(0xFF3B82F6).withOpacity(0.3))),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            children: [
-              const Icon(Icons.gavel_rounded, color: Color(0xFF3B82F6)),
-              const SizedBox(width: 12),
-              Text('EU AI Act Compliance Analysis', style: GoogleFonts.spaceGrotesk(color: Colors.white, fontSize: 18, fontWeight: FontWeight.bold)),
-            ],
-          ),
-          const SizedBox(height: 20),
-          ..._biometricFlags.map((flag) => Padding(
-            padding: const EdgeInsets.only(bottom: 10),
-            child: Row(
-              children: [
-                const Icon(Icons.report_problem_rounded, color: Color(0xFFEF4444), size: 16),
-                const SizedBox(width: 12),
-                Text(flag, style: const TextStyle(color: Colors.white70, fontSize: 14)),
-              ],
-            ),
-          )).toList(),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildAdversarialReport() {
-    return Container(
-      width: double.infinity,
-      padding: const EdgeInsets.all(24),
-      decoration: BoxDecoration(color: Colors.black38, borderRadius: BorderRadius.circular(20), border: Border.all(color: Colors.white10)),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text('System Robustness & Adversarial Noise', style: GoogleFonts.spaceGrotesk(color: Colors.white, fontWeight: FontWeight.bold)),
           const SizedBox(height: 12),
-          const Text('How vulnerable is this model to input manipulation or lighting shifts?', style: TextStyle(color: Colors.white38, fontSize: 13)),
-          const SizedBox(height: 20),
-          LinearProgressIndicator(value: _robustnessScore / 100, color: _robustnessScore > 50 ? const Color(0xFF10B981) : const Color(0xFFEF4444), backgroundColor: Colors.white10),
-        ],
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+            decoration: BoxDecoration(color: color.withOpacity(0.1), borderRadius: BorderRadius.circular(8), border: Border.all(color: color.withOpacity(0.3))),
+            child: Text(images.isEmpty ? 'Choose Images' : 'Change Images', style: GoogleFonts.spaceGrotesk(color: color, fontSize: 12, fontWeight: FontWeight.bold)),
+          ),
+        ]),
       ),
     );
   }
 
-  Widget _buildAlertBanner() {
+  // ── Step 2: Running ───────────────────────────────────────────
+  Widget _buildRunningStep() {
+    final progress = _progressTotal > 0 ? _progressDone / _progressTotal : 0.0;
+    return Column(mainAxisAlignment: MainAxisAlignment.center, children: [
+      const SizedBox(height: 60),
+      Container(
+        padding: const EdgeInsets.all(32),
+        decoration: BoxDecoration(
+          color: const Color(0xFF0D0D1A),
+          borderRadius: BorderRadius.circular(24),
+          border: Border.all(color: const Color(0xFF6366F1).withOpacity(0.3)),
+        ),
+        child: Column(children: [
+          const Icon(Icons.remove_red_eye_outlined, color: Color(0xFF818CF8), size: 48),
+          const SizedBox(height: 20),
+          Text('Calling Google Vision API', style: GoogleFonts.spaceGrotesk(color: Colors.white, fontSize: 20, fontWeight: FontWeight.bold)),
+          const SizedBox(height: 8),
+          Text('Analyzing image $_progressDone of $_progressTotal', style: const TextStyle(color: Colors.white54, fontSize: 14)),
+          const SizedBox(height: 24),
+          ClipRRect(
+            borderRadius: BorderRadius.circular(8),
+            child: LinearProgressIndicator(
+              value: progress,
+              minHeight: 8,
+              backgroundColor: Colors.white.withOpacity(0.05),
+              color: const Color(0xFF6366F1),
+            ),
+          ),
+          const SizedBox(height: 16),
+          Text('${(progress * 100).toInt()}%', style: GoogleFonts.spaceGrotesk(color: const Color(0xFF818CF8), fontSize: 28, fontWeight: FontWeight.bold)),
+          const SizedBox(height: 8),
+          const Text('Each image is sent to Google Cloud Vision — no data stored.', style: TextStyle(color: Colors.white24, fontSize: 11)),
+        ]),
+      ),
+    ]).animate().fadeIn();
+  }
+
+  // ── Step 3: Results ───────────────────────────────────────────
+  Widget _buildResultsStep() {
+    final r = _result;
+    if (r == null) return const SizedBox();
+
+    final verdictColor = r.verdict == 'BIASED'
+        ? const Color(0xFFEF4444)
+        : r.verdict == 'BORDERLINE'
+            ? const Color(0xFFF59E0B)
+            : const Color(0xFF10B981);
+
+    return Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+      _heading('Audit Results'),
+      const SizedBox(height: 8),
+      Text('Computed from real Google Vision API detectionConfidence scores.',
+        style: const TextStyle(color: Colors.white38, fontSize: 12)),
+      const SizedBox(height: 24),
+
+      // Verdict banner
+      Container(
+        width: double.infinity,
+        padding: const EdgeInsets.all(24),
+        decoration: BoxDecoration(
+          color: verdictColor.withOpacity(0.07),
+          borderRadius: BorderRadius.circular(20),
+          border: Border.all(color: verdictColor.withOpacity(0.3)),
+        ),
+        child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+          Row(children: [
+            Icon(r.verdict == 'BIASED' ? Icons.dangerous_rounded : r.verdict == 'BORDERLINE' ? Icons.warning_amber_rounded : Icons.verified_rounded, color: verdictColor, size: 24),
+            const SizedBox(width: 12),
+            Text(r.verdict, style: GoogleFonts.spaceGrotesk(color: verdictColor, fontSize: 22, fontWeight: FontWeight.w900)),
+            const Spacer(),
+            _badge(r.verdict, verdictColor),
+          ]),
+          const SizedBox(height: 12),
+          Text(r.verdictDetail, style: const TextStyle(color: Colors.white70, fontSize: 13, height: 1.5)),
+        ]),
+      ),
+      const SizedBox(height: 24),
+
+      // Core metric
+      Container(
+        padding: const EdgeInsets.all(20),
+        decoration: BoxDecoration(color: const Color(0xFF0D0D1A), borderRadius: BorderRadius.circular(16), border: Border.all(color: Colors.white.withOpacity(0.08))),
+        child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+          Text('Disparate Impact Ratio', style: GoogleFonts.spaceGrotesk(color: Colors.white54, fontSize: 12)),
+          const SizedBox(height: 4),
+          Text(r.disparateImpactRatio.toStringAsFixed(3), style: GoogleFonts.spaceGrotesk(color: verdictColor, fontSize: 40, fontWeight: FontWeight.w900)),
+          Text('Formula: min(detection_rate) / max(detection_rate)  |  Threshold: ≥0.80', style: GoogleFonts.jetBrainsMono(color: Colors.white24, fontSize: 10)),
+          const SizedBox(height: 12),
+          ClipRRect(
+            borderRadius: BorderRadius.circular(6),
+            child: LinearProgressIndicator(value: r.disparateImpactRatio.clamp(0, 1), minHeight: 6, backgroundColor: Colors.white.withOpacity(0.05), color: verdictColor),
+          ),
+        ]),
+      ),
+      const SizedBox(height: 16),
+
+      // Group comparison
+      Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
+        Expanded(child: _groupCard(r.groupA, const Color(0xFF6366F1))),
+        const SizedBox(width: 16),
+        Expanded(child: _groupCard(r.groupB, const Color(0xFF8B5CF6))),
+      ]),
+      const SizedBox(height: 24),
+
+      // Methodology note
+      _infoCard(
+        'Methodology',
+        'Detection Rate = faces found / images uploaded.\n'
+        'Detection Confidence = Vision API\'s raw confidence score (0–1).\n'
+        'Disparate Impact Ratio < 0.8 violates the EEOC four-fifths rule.\n\n'
+        'Aligned with: Gender Shades (MIT, 2018), NIST FRVT (2019), EU AI Act Annex III.',
+        const Color(0xFF818CF8),
+        Icons.info_outline_rounded,
+      ),
+      const SizedBox(height: 24),
+
+      // Restart
+      _primaryButton('Run Another Audit', () => setState(() {
+        _step = 0; _result = null; _groupAImages = []; _groupBImages = [];
+      })),
+    ]).animate().fadeIn();
+  }
+
+  Widget _groupCard(GroupBiasStats g, Color color) {
     return Container(
       padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
-        gradient: const LinearGradient(colors: [Color(0xFFEF4444), Color(0xFF991B1B)]),
+        color: color.withOpacity(0.05),
         borderRadius: BorderRadius.circular(16),
-        boxShadow: [BoxShadow(color: const Color(0xFFEF4444).withOpacity(0.3), blurRadius: 20)],
+        border: Border.all(color: color.withOpacity(0.2)),
       ),
-      child: Row(
-        children: [
-          const Icon(Icons.warning_amber_rounded, color: Colors.white, size: 28),
-          const SizedBox(width: 16),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Text('CRITICAL BIOMETRIC SKEW', style: GoogleFonts.spaceGrotesk(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 16)),
-                const Text('Model reliability drops below 70% for specific demographic subsets.', style: TextStyle(color: Colors.white70, fontSize: 12)),
-              ],
-            ),
-          ),
-          IconButton(onPressed: () => setState(() => _showAlert = false), icon: const Icon(Icons.close, color: Colors.white)),
-        ],
-      ),
+      child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+        Text(g.groupName, style: GoogleFonts.spaceGrotesk(color: Colors.white, fontSize: 14, fontWeight: FontWeight.bold)),
+        const SizedBox(height: 16),
+        _statRow('Images', '${g.totalImages}', color),
+        _statRow('Faces Found', '${g.detectedFaces}', color),
+        _statRow('Detection Rate', '${(g.detectionRate * 100).toStringAsFixed(1)}%', color),
+        _statRow('Avg Confidence', '${(g.avgDetectionConfidence * 100).toStringAsFixed(1)}%', color),
+        _statRow('Landmark Conf.', '${(g.avgLandmarkConfidence * 100).toStringAsFixed(1)}%', color),
+      ]),
     );
   }
-}
 
-class _LandmarkPainter extends CustomPainter {
-  final int seed;
-  _LandmarkPainter(this.seed);
-
-  @override
-  void paint(Canvas canvas, Size size) {
-    final paint = Paint()..color = const Color(0xFF06B6D4).withOpacity(0.5)..style = PaintingStyle.fill;
-    final r = Random(seed);
-    for (int i = 0; i < 40; i++) {
-      canvas.drawCircle(Offset(size.width * (0.3 + r.nextDouble() * 0.4), size.height * (0.2 + r.nextDouble() * 0.4)), 2, paint);
-    }
-  }
-
-  @override
-  bool shouldRepaint(covariant CustomPainter oldDelegate) => true;
-}
-
-class _Tilt3DCard extends StatefulWidget {
-  final Widget child;
-  const _Tilt3DCard({required this.child});
-  @override
-  State<_Tilt3DCard> createState() => _Tilt3DCardState();
-}
-
-class _Tilt3DCardState extends State<_Tilt3DCard> {
-  double x = 0.0, y = 0.0;
-  @override
-  Widget build(BuildContext context) {
-    return MouseRegion(
-      onHover: (e) {
-        final box = context.findRenderObject() as RenderBox?;
-        if (box == null) return;
-        final size = box.size;
-        final pos = box.globalToLocal(e.position);
-        setState(() {
-          x = (pos.dy - size.height / 2) / (size.height / 2);
-          y = (pos.dx - size.width / 2) / (size.width / 2);
-        });
-      },
-      onExit: (_) => setState(() { x = 0; y = 0; }),
-      child: Transform(
-        transform: Matrix4.identity()..setEntry(3, 2, 0.001)..rotateX(-x * 0.05)..rotateY(y * 0.05),
-        alignment: FractionalOffset.center,
-        child: widget.child,
-      ),
+  Widget _statRow(String label, String value, Color color) {
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 8),
+      child: Row(mainAxisAlignment: MainAxisAlignment.spaceBetween, children: [
+        Text(label, style: const TextStyle(color: Colors.white38, fontSize: 12)),
+        Text(value, style: GoogleFonts.jetBrainsMono(color: color, fontSize: 13, fontWeight: FontWeight.bold)),
+      ]),
     );
   }
+
+  // ── Shared Widgets ────────────────────────────────────────────
+  Widget _heading(String text) => Text(text, style: GoogleFonts.spaceGrotesk(color: Colors.white, fontSize: 28, fontWeight: FontWeight.w900));
+
+  Widget _infoCard(String title, String body, Color color, IconData icon) => Container(
+    padding: const EdgeInsets.all(20),
+    decoration: BoxDecoration(color: color.withOpacity(0.05), borderRadius: BorderRadius.circular(16), border: Border.all(color: color.withOpacity(0.2))),
+    child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+      Row(children: [
+        Icon(icon, color: color, size: 18),
+        const SizedBox(width: 10),
+        Text(title, style: GoogleFonts.spaceGrotesk(color: Colors.white, fontSize: 14, fontWeight: FontWeight.bold)),
+      ]),
+      const SizedBox(height: 10),
+      Text(body, style: const TextStyle(color: Colors.white54, fontSize: 12, height: 1.5)),
+    ]),
+  );
+
+  Widget _errorCard(String msg) => Container(
+    padding: const EdgeInsets.all(16),
+    decoration: BoxDecoration(color: const Color(0xFFEF4444).withOpacity(0.08), borderRadius: BorderRadius.circular(12), border: Border.all(color: const Color(0xFFEF4444).withOpacity(0.3))),
+    child: Row(children: [
+      const Icon(Icons.error_outline, color: Color(0xFFEF4444), size: 18),
+      const SizedBox(width: 10),
+      Expanded(child: Text(msg, style: const TextStyle(color: Color(0xFFEF4444), fontSize: 12))),
+    ]),
+  );
+
+  Widget _textField(TextEditingController ctrl, String hint, Color color) => TextField(
+    controller: ctrl,
+    style: GoogleFonts.spaceGrotesk(color: Colors.white),
+    decoration: InputDecoration(
+      hintText: hint,
+      hintStyle: const TextStyle(color: Colors.white24),
+      filled: true,
+      fillColor: Colors.white.withOpacity(0.03),
+      border: OutlineInputBorder(borderRadius: BorderRadius.circular(10), borderSide: BorderSide(color: color.withOpacity(0.3))),
+      enabledBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(10), borderSide: BorderSide(color: color.withOpacity(0.2))),
+      focusedBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(10), borderSide: BorderSide(color: color)),
+      contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+    ),
+  );
+
+  Widget _primaryButton(String label, VoidCallback? onTap) => SizedBox(
+    width: double.infinity,
+    height: 50,
+    child: ElevatedButton(
+      onPressed: onTap,
+      style: ElevatedButton.styleFrom(
+        backgroundColor: onTap != null ? const Color(0xFF6366F1) : Colors.white12,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+        elevation: 0,
+      ),
+      child: Text(label, style: GoogleFonts.spaceGrotesk(color: Colors.white, fontWeight: FontWeight.bold)),
+    ),
+  );
+
+  Widget _secondaryButton(String label, VoidCallback onTap) => OutlinedButton(
+    onPressed: onTap,
+    style: OutlinedButton.styleFrom(
+      side: const BorderSide(color: Colors.white12),
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+      padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 14),
+    ),
+    child: Text(label, style: const TextStyle(color: Colors.white54)),
+  );
+
+  Widget _badge(String label, Color color) => Container(
+    padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+    decoration: BoxDecoration(color: color.withOpacity(0.12), borderRadius: BorderRadius.circular(6), border: Border.all(color: color.withOpacity(0.3))),
+    child: Text(label, style: GoogleFonts.jetBrainsMono(color: color, fontSize: 10, fontWeight: FontWeight.bold)),
+  );
 }

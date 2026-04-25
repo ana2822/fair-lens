@@ -1,41 +1,175 @@
-# 🚀 FairLens: The Multi-Modal AI Governance & Trust Layer
+# FairLens — AI Governance & Bias Detection Platform
 
-## 🌟 Project Vision
-FairLens is not just a bias detector; it is a real-time AI Trust Layer. It bridges the gap between ethical AI research and production-grade software by providing a "Shadow Monitoring" system that catches bias in multi-modal data (Tabular, Vision, and Text) before it results in real-world harm.
+> **FairLens detects, explains, and fixes bias in AI systems before it affects real-world decisions.**
+> Upload any CSV dataset — hiring, loans, medical, HR — and get a full fairness audit with legal risk mapping, Gemini AI explanation, and a debiased dataset, all in under 60 seconds.
 
-## 🧠 Advanced "Deep-Tech" Features
+---
 
-### 1. Intersectional Bias Analytics (The "Matrix" View)
-**The Problem:** Most tools check for gender OR race. They miss bias against specific subgroups (e.g., Hispanic women over 50).
-**The Deep-Tech Solution:** Implemented a Multi-dimensional Clustering Engine. Using $k$-means and statistical parity analysis, FairLens identifies "hidden" bias pockets where multiple sensitive attributes intersect, visualizing them through a 3D Bias Heatmap.
+## 🚀 Live Demo
 
-### 2. "Shadow Mode" Real-Time Production Monitoring
-**The Problem:** Models "drift." A fair model today might become biased tomorrow as real-world data changes.
-**The Deep-Tech Solution:** A Middleware Proxy architecture. FairLens can run in "Shadow Mode" alongside a live API. It uses Population Stability Index (PSI) and Kullback-Leibler (KL) Divergence to detect "Bias Drift" in real-time, triggering an emergency alert before the biased prediction reaches the end-user.
+**[▶ Open FairLens Live](https://fairlens-app.web.app)**
 
-### 3. The Fairness-Accuracy "Pareto Frontier" Optimizer
-**The Problem:** Businesses fear that "fixing" bias will destroy their model's performance.
-**The Deep-Tech Solution:** An interactive Optimization Slider. It calculates the mathematical trade-off between Accuracy and Demographic Parity. Users can visually find the "Pareto Optimal" point—the exact setting where the model is as fair as possible without losing its competitive edge.
+No sign-up required. Click **"Try Live Demo"** on the login screen — it pre-loads a sample hiring dataset and shows real bias analysis instantly.
 
-### 4. Adversarial LLM Red-Teaming (Gemini-Powered)
-**The Problem:** Generative AI can be subtly toxic or stereotypical.
-**The Deep-Tech Solution:** An Automated Adversarial Agent. Using the Gemini API, FairLens generates "Stress Test" prompts designed to bait an LLM into showing cultural, religious, or regional bias. It scores the LLM’s responses based on Sentiment Variance across different demographics.
+---
 
-### 5. Regulatory Compliance "One-Click" Auditor
-**The Problem:** Compliance with the EU AI Act or the US AI Bill of Rights is manually exhausting.
-**The Deep-Tech Solution:** An AI-to-Legal Translation Engine. FairLens maps technical metrics (like Disparate Impact Ratio) directly to specific legal clauses. With one click, it generates a "Regulatory Readiness Report" (PDF) suitable for HR, Legal teams, or government auditors.
+## 📹 Demo Video
 
-## 🛠️ The Winning Tech Stack
-*   **Frontend:** Flutter Web (for high-fidelity data visualization and fl_chart).
-*   **AI Engine:** Google Gemini Pro (for explainable AI and adversarial prompt generation).
-*   **Math/Logic:** Scikit-learn & Fairlearn (for computing Disparate Impact and Equalized Odds).
-*   **Backend:** Python FastAPI (for the low-latency Shadow Monitoring proxy).
-*   **Storage:** Firebase (for logging "Bias Alerts" and historical trend analysis).
+**[▶ Watch 3-Minute Demo](https://youtube.com/your-link-here)**
 
-## 🔄 System Workflow (The Winning Demo Path)
-1.  **Ingestion:** User connects a live API or uploads a dataset.
-2.  **Detection:** FairLens runs the Intersectional Analysis and identifies a bias "Hotzone."
-3.  **Explainability:** Gemini explains why the bias exists in plain English.
-4.  **Simulation:** The user moves the Fairness-Accuracy Slider to find a better balance.
-5.  **Mitigation:** FairLens simulates a "Reweighting" strategy to fix the data.
-6.  **Certification:** The system generates an Audit-Ready PDF proving the system is now "Safe for Deployment."
+Shows the full loop: upload CSV → bias score → Gemini explanation → auto fix → PDF download.
+
+---
+
+## 🔍 What It Does
+
+Amazon's hiring AI penalized CVs containing the word "women's" — trained on 10 years of biased historical data. FairLens catches exactly this kind of bias before it ships.
+
+**The full pipeline:**
+
+```
+Upload CSV → Real bias computation → Gemini AI explanation
+    → Legal risk mapping → Auto-fix → PDF audit report
+```
+
+All in under 60 seconds. No code. No data science degree required.
+
+---
+
+## ✨ Key Features
+
+| Feature | What It Does |
+|---|---|
+| **Bias Detection** | Computes Disparate Impact Ratio & Statistical Parity from your actual data |
+| **Legal Risk Mapping** | Auto-maps bias to EEOC, GDPR Art.22, EU AI Act, India AI Guidelines |
+| **Gemini AI Explanation** | Plain-English analysis of what the bias means and how to fix it |
+| **Red-Team Loop** | Sends biased text to Gemini live — shows the LLM amplifying the bias |
+| **Auto Fix** | Remove or anonymize biased columns, download debiased CSV |
+| **Face Bias Audit** | Google Cloud Vision API — real detection confidence disparity across groups |
+| **PDF Report** | Full legally-formatted audit report with AI-BOM and computed metrics |
+| **Gov Dashboard** | Real-time risk monitoring for enterprise/government compliance teams |
+
+---
+
+## 🎯 Google Services Used
+
+| Service | How Used |
+|---|---|
+| **Gemini 2.5 Flash** | Bias analysis, plain-English explanation, red-team adversarial testing |
+| **Google Cloud Vision API** | Face bias detection — real `detectionConfidence` scores across demographic groups |
+| **Firebase Auth** | Google Sign-In, Email/Password, Demo Mode |
+| **Cloud Firestore** | Per-user audit history storage |
+| **Firebase Hosting** | Live web deployment |
+| **Firebase Analytics** | Usage tracking |
+
+---
+
+## 🏁 Problem Statement Alignment
+
+> *"Computer programs now make life-changing decisions... if they learn from flawed or unfair historical data, they will repeat and amplify those exact same discriminatory mistakes."*
+> — Google Solution Challenge 2026
+
+| Problem | FairLens Solution |
+|---|---|
+| Decisions about jobs, loans, medical care | Auto-detects hiring, loan, medical dataset types |
+| Learning from flawed historical data | Real Disparate Impact math on your actual CSV |
+| Repeat and amplify mistakes | Red-Team: proves LLM bias amplification live |
+| Inspect datasets and models | CSV + Text + Face bias modules |
+| Measure, flag, fix | Score 0–100, severity alerts, auto-fix + debiased CSV |
+| Before impacting real people | PDF audit report for pre-deployment compliance |
+
+---
+
+## 💻 Run Locally
+
+### Prerequisites
+- Flutter 3.x (`flutter --version`)
+- Chrome browser
+
+### Setup
+
+```bash
+git clone https://github.com/your-username/fairlens
+cd fairlens
+
+# Install dependencies
+flutter pub get
+
+# Add your API keys
+cp .env.example .env
+# Edit .env and add:
+# GEMINI_KEY=your_gemini_api_key
+# VISION_KEY=your_google_vision_api_key
+
+# Run
+flutter run -d chrome
+```
+
+### API Keys Needed
+1. **Gemini API Key** — [Get it at Google AI Studio](https://aistudio.google.com/app/apikey) (free)
+2. **Vision API Key** — [Google Cloud Console](https://console.cloud.google.com) → Enable Cloud Vision API → Create credentials (1,000 free requests/month)
+
+---
+
+## 📊 What's Real (Not Simulated)
+
+| Feature | Status |
+|---|---|
+| CSV bias math (Disparate Impact, Statistical Parity) | ✅ Real computation on your data |
+| Gemini AI analysis | ✅ Real API call |
+| Red-team adversarial LLM output | ✅ Real Gemini API call |
+| Face detection confidence scores | ✅ Real Google Vision API |
+| Legal risk mapping | ✅ Real (hardcoded law database) |
+| PDF report numbers | ✅ All from real AnalysisReport object |
+| Gov dashboard live score | ⚡ Timer-animated (seeded from real data) |
+
+---
+
+## 🏗️ Architecture
+
+```
+lib/
+├── models/
+│   └── bias_detector.dart       ← Core: Disparate Impact, Statistical Parity
+├── services/
+│   ├── gemini_service.dart      ← Gemini AI + Red-Team adversarial testing
+│   ├── vision_service.dart      ← Google Vision face bias detection
+│   ├── pdf_service.dart         ← HTML audit report export
+│   ├── auth_service.dart        ← Firebase Auth + Demo Mode
+│   └── firebase_service.dart    ← Firestore history
+└── screens/ (12 screens)
+    ├── login_screen.dart         ← Demo-first entry point
+    ├── home_screen.dart          ← Landing + CSV upload
+    ├── analysis_screen.dart      ← Core: 5-tab bias audit
+    ├── gov_dashboard_screen.dart ← Enterprise monitoring
+    ├── text_bias_screen.dart     ← NLP bias + Red-Team
+    └── face_bias_screen.dart     ← Vision API face bias
+```
+
+---
+
+## ❓ FAQ for Judges
+
+**"How is this different from IBM AIF360?"**
+AIF360 is a Python library for data scientists. FairLens is a complete platform that any compliance officer can use in a browser — no code, no setup, with legal mapping and AI explanation built in.
+
+**"How accurate is your bias detection?"**
+We use the EEOC four-fifths rule (Disparate Impact < 0.8 = flagged) — the same standard used by U.S. employment law. It's not our threshold, it's the legal threshold.
+
+**"What if the CSV has no gender column?"**
+FairLens auto-detects sensitive columns by keyword matching (gender, sex, race, caste, age, religion, location) — no manual configuration needed.
+
+**"How do you handle privacy?"**
+Data never leaves the browser — analysis runs client-side. Only aggregated scores (not raw data) are saved to Firestore. PII scrubbing is built into the Text Bias module.
+
+---
+
+## 👥 Team
+
+**Team FairLens** — Google Solution Challenge 2026
+
+---
+
+## 📄 License
+
+MIT License — see [LICENSE](LICENSE)

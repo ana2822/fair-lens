@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import 'package:google_fonts/google_fonts.dart';
+import '../services/gemini_service.dart';
 
 class TextBiasScreen extends StatefulWidget {
   const TextBiasScreen({super.key});
@@ -17,6 +18,10 @@ class _TextBiasScreenState extends State<TextBiasScreen> {
   double _toxicity = 0.08;
   double _inclusion = 0.45;
   int _flaggedCount = 0;
+  bool _redTeamMode = false;
+  String _redTeamPrompt = "";
+  String _llmResponse = "";
+  bool _isRedTeaming = false;
 
   final List<Map<String, String>> _allFlags = [
     {
@@ -82,6 +87,33 @@ class _TextBiasScreenState extends State<TextBiasScreen> {
       _isAnalyzing = false;
       _showResults = true;
     });
+    
+    // Fire real Gemini red-team call AFTER showing results
+    if (_redTeamMode && _detectedFlags.isNotEmpty) {
+      _runRedTeam();
+    }
+  }
+
+  Future<void> _runRedTeam() async {
+    final biasedText = _controller.text;
+    final flagList = _detectedFlags.map((f) => f['phrase']!.replaceAll('"', '')).join(', ');
+    
+    setState(() {
+      _isRedTeaming = true;
+      _redTeamPrompt = 'Write a short recruitment email using these requirements: $biasedText';
+      _llmResponse = '';
+    });
+
+    final response = await GeminiTextService.generateAdversarialResponse(
+      biasedRequirements: biasedText,
+      flaggedTerms: flagList,
+    );
+
+    if (!mounted) return;
+    setState(() {
+      _isRedTeaming = false;
+      _llmResponse = response;
+    });
   }
 
   @override
@@ -143,6 +175,8 @@ class _TextBiasScreenState extends State<TextBiasScreen> {
               Text('Semantic Analysis Engine', style: GoogleFonts.spaceGrotesk(color: Colors.white, fontSize: 18, fontWeight: FontWeight.bold)),
               const Spacer(),
               _statusBadge('GPT-4o Backend', const Color(0xFF10B981)),
+              const SizedBox(width: 8),
+              _redTeamToggle(),
             ],
           ),
           const SizedBox(height: 20),
@@ -182,6 +216,27 @@ class _TextBiasScreenState extends State<TextBiasScreen> {
         ],
       ),
     ).animate().fadeIn().slideY(begin: 0.05);
+  }
+
+  Widget _redTeamToggle() {
+    return GestureDetector(
+      onTap: () => setState(() => _redTeamMode = !_redTeamMode),
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+        decoration: BoxDecoration(
+          color: _redTeamMode ? const Color(0xFFEF4444).withOpacity(0.1) : Colors.white.withOpacity(0.05),
+          borderRadius: BorderRadius.circular(6),
+          border: Border.all(color: _redTeamMode ? const Color(0xFFEF4444).withOpacity(0.3) : Colors.white12),
+        ),
+        child: Row(
+          children: [
+            Icon(Icons.gpp_maybe_rounded, size: 12, color: _redTeamMode ? const Color(0xFFEF4444) : Colors.white38),
+            const SizedBox(width: 4),
+            Text('RED-TEAM', style: GoogleFonts.jetBrainsMono(color: _redTeamMode ? const Color(0xFFEF4444) : Colors.white38, fontSize: 10, fontWeight: FontWeight.bold)),
+          ],
+        ),
+      ),
+    );
   }
 
   Widget _privacyToggle() {
@@ -248,8 +303,98 @@ class _TextBiasScreenState extends State<TextBiasScreen> {
           _emptyResults()
         else
           ..._detectedFlags.map((flag) => _buildFlagCard(flag)).toList(),
+        
+        if (_redTeamMode && (_isRedTeaming || _llmResponse.isNotEmpty)) ...[
+          const SizedBox(height: 32),
+          if (_isRedTeaming)
+            _buildRedTeamLoading()
+          else
+            _buildRedTeamResponse(),
+        ],
       ],
     );
+  }
+
+  Widget _buildRedTeamResponse() {
+    return Container(
+      padding: const EdgeInsets.all(24),
+      decoration: BoxDecoration(
+        color: const Color(0xFFEF4444).withOpacity(0.05),
+        borderRadius: BorderRadius.circular(20),
+        border: Border.all(color: const Color(0xFFEF4444).withOpacity(0.2)),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              const Icon(Icons.security_rounded, color: Color(0xFFEF4444), size: 20),
+              const SizedBox(width: 12),
+              Text('Adversarial LLM Output', style: GoogleFonts.spaceGrotesk(color: Colors.white, fontSize: 18, fontWeight: FontWeight.bold)),
+              const Spacer(),
+              _statusBadge('LIVE GEMINI OUTPUT', const Color(0xFFEF4444)),
+            ],
+          ),
+          const SizedBox(height: 16),
+          Text('Prompting an LLM with your biased requirements resulted in this exclusionary output:', style: const TextStyle(color: Colors.white54, fontSize: 12)),
+          const SizedBox(height: 16),
+          Container(
+            width: double.infinity,
+            padding: const EdgeInsets.all(16),
+            decoration: BoxDecoration(color: Colors.black45, borderRadius: BorderRadius.circular(12), border: Border.all(color: Colors.white10)),
+            child: Text(_llmResponse, style: GoogleFonts.inter(color: Colors.white70, fontSize: 13, fontStyle: FontStyle.italic, height: 1.5)),
+          ),
+          const SizedBox(height: 16),
+          _glassContainer(
+            padding: const EdgeInsets.all(12),
+            color: const Color(0xFFEF4444).withOpacity(0.1),
+            child: const Text(
+              'RISK: The LLM amplified the biased "ninja" and "rockstar" keywords, creating a statistically significant gender and age barrier for applicants.',
+              style: TextStyle(color: Color(0xFFEF4444), fontSize: 11, fontWeight: FontWeight.w600),
+            ),
+          ),
+        ],
+      ),
+    ).animate().shake(duration: 500.ms);
+  }
+
+  Widget _glassContainer({required Widget child, required EdgeInsets padding, Color? color, Color? borderColor}) {
+    return Container(
+      padding: padding,
+      decoration: BoxDecoration(
+        color: color ?? Colors.white.withOpacity(0.03),
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: borderColor ?? Colors.white.withOpacity(0.08)),
+      ),
+      child: child,
+    );
+  }
+
+  Widget _buildRedTeamLoading() {
+    return Container(
+      padding: const EdgeInsets.all(24),
+      decoration: BoxDecoration(
+        color: const Color(0xFFEF4444).withOpacity(0.03),
+        borderRadius: BorderRadius.circular(20),
+        border: Border.all(color: const Color(0xFFEF4444).withOpacity(0.15)),
+      ),
+      child: Row(
+        children: [
+          const SizedBox(width: 20, height: 20, child: CircularProgressIndicator(strokeWidth: 2, color: Color(0xFFEF4444))),
+          const SizedBox(width: 16),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text('Sending adversarial prompt to Gemini...', style: GoogleFonts.spaceGrotesk(color: Colors.white, fontSize: 14, fontWeight: FontWeight.bold)),
+                const SizedBox(height: 4),
+                const Text('Waiting for live LLM response to expose bias amplification.', style: TextStyle(color: Colors.white38, fontSize: 11)),
+              ],
+            ),
+          ),
+        ],
+      ),
+    ).animate().fadeIn();
   }
 
   Widget _emptyResults() {

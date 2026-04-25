@@ -26,6 +26,10 @@ class _GovDashboardScreenState extends State<GovDashboardScreen> with TickerProv
   int _alertCount = 0;
   bool _isOnline = true;
   final List<Map<String, dynamic>> _liveLogs = [];
+  
+  // Agentic Auditor State
+  String _currentGoal = "Minimize Disparate Impact in rural areas";
+  double _goalProgress = 0.65;
 
   static const _events = [
     {'type': 'batch',    'msg': 'New applicant batch processed.'},
@@ -225,6 +229,10 @@ class _GovDashboardScreenState extends State<GovDashboardScreen> with TickerProv
                       Expanded(flex: 1, child: _buildLiveFeed()),
                     ],
                   ),
+                  const SizedBox(height: 24),
+
+                  // 🤖 AGENTIC AUDITOR: GOAL TRACKER
+                  _buildGoalTracker(),
                   const SizedBox(height: 24),
       
                   // 📊 EDUCATION-SPECIFIC MODULE
@@ -486,7 +494,16 @@ class _GovDashboardScreenState extends State<GovDashboardScreen> with TickerProv
               const SizedBox(width: 8),
               Text('Live Monitoring', style: GoogleFonts.spaceGrotesk(color: Colors.white, fontWeight: FontWeight.bold)),
               const Spacer(),
-              _pulseDot(),
+              AnimatedBuilder(
+                animation: _pulseController,
+                builder: (_, __) => Container(
+                  width: 6, height: 6,
+                  decoration: BoxDecoration(
+                    color: const Color(0xFF10B981).withOpacity(0.4 + 0.6 * _pulseController.value),
+                    shape: BoxShape.circle,
+                  ),
+                ),
+              ),
             ],
           ),
           const SizedBox(height: 16),
@@ -529,16 +546,120 @@ class _GovDashboardScreenState extends State<GovDashboardScreen> with TickerProv
     );
   }
 
-  Widget _pulseDot() {
-    return AnimatedBuilder(
-      animation: _pulseController,
-      builder: (_, __) => Container(
-        width: 6, height: 6,
-        decoration: BoxDecoration(
-          color: const Color(0xFF10B981).withOpacity(0.4 + 0.6 * _pulseController.value),
-          shape: BoxShape.circle,
+  Widget _buildGoalTracker() {
+    return Container(
+      padding: const EdgeInsets.all(24),
+      decoration: BoxDecoration(
+        color: const Color(0xFF0D0D1A),
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: const Color(0xFF818CF8).withOpacity(0.3)),
+        gradient: LinearGradient(
+          colors: [const Color(0xFF6366F1).withOpacity(0.05), const Color(0xFF0D0D1A)],
+          begin: Alignment.topLeft, end: Alignment.bottomRight,
         ),
       ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              const Icon(Icons.track_changes_rounded, color: Color(0xFF818CF8)),
+              const SizedBox(width: 12),
+              Text('Agentic Auditor: Dynamic Goal Alignment', style: GoogleFonts.spaceGrotesk(
+                color: Colors.white, fontSize: 18, fontWeight: FontWeight.bold,
+              )),
+              const Spacer(),
+              _glowButton('Update Goal', Icons.edit_note_rounded, () {
+                AlertService().trigger('Goal alignment engine ready. Enter new policy objective.', AlertType.info);
+              }),
+            ],
+          ),
+          const SizedBox(height: 20),
+          Row(
+            children: [
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text('Current Policy Objective', style: GoogleFonts.spaceGrotesk(color: Colors.white54, fontSize: 12)),
+                    const SizedBox(height: 4),
+                    Text(_currentGoal, style: GoogleFonts.spaceGrotesk(color: Colors.white, fontSize: 15, fontWeight: FontWeight.w600)),
+                  ],
+                ),
+              ),
+              Container(
+                padding: const EdgeInsets.all(12),
+                decoration: BoxDecoration(color: const Color(0xFF10B981).withOpacity(0.1), borderRadius: BorderRadius.circular(12)),
+                child: Column(
+                  children: [
+                    Text('${(_goalProgress * 100).toInt()}%', style: GoogleFonts.spaceGrotesk(color: const Color(0xFF10B981), fontSize: 20, fontWeight: FontWeight.bold)),
+                    Text('Aligned', style: TextStyle(color: const Color(0xFF10B981), fontSize: 10, fontWeight: FontWeight.bold)),
+                  ],
+                ),
+              )
+            ],
+          ),
+          const SizedBox(height: 20),
+          ClipRRect(
+            borderRadius: BorderRadius.circular(10),
+            child: LinearProgressIndicator(
+              value: _goalProgress,
+              minHeight: 8,
+              backgroundColor: Colors.white.withOpacity(0.05),
+              color: const Color(0xFF6366F1),
+            ),
+          ),
+          const SizedBox(height: 16),
+          _glassContainer(
+            padding: const EdgeInsets.all(12),
+            color: const Color(0xFF6366F1).withOpacity(0.05),
+            child: Row(
+              children: [
+                const Icon(Icons.auto_awesome, color: Color(0xFF818CF8), size: 16),
+                const SizedBox(width: 10),
+                Expanded(
+                  child: Text(
+                    'Gemini Insight: Your model is currently prioritizing speed over rural equity. To reach 90% alignment, adjust the Fairness-Accuracy slider by +12%.',
+                    style: GoogleFonts.inter(color: Colors.white70, fontSize: 12, height: 1.4),
+                  ),
+                ),
+              ],
+            ),
+          )
+        ],
+      ),
+    ).animate().fadeIn(delay: 150.ms).slideY(begin: 0.1);
+  }
+
+  Widget _glowButton(String label, IconData icon, VoidCallback onTap) =>
+    InkWell(
+      onTap: onTap,
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+        decoration: BoxDecoration(
+          color: const Color(0xFF6366F1).withOpacity(0.1),
+          borderRadius: BorderRadius.circular(8),
+          border: Border.all(color: const Color(0xFF6366F1).withOpacity(0.3)),
+        ),
+        child: Row(
+          children: [
+            Icon(icon, size: 14, color: const Color(0xFF818CF8)),
+            const SizedBox(width: 6),
+            Text(label, style: GoogleFonts.spaceGrotesk(color: const Color(0xFF818CF8), fontSize: 12, fontWeight: FontWeight.bold)),
+          ],
+        ),
+      ),
+    );
+
+  Widget _glassContainer({required Widget child, required EdgeInsets padding, Color? color, Color? borderColor}) {
+    return Container(
+      padding: padding,
+      decoration: BoxDecoration(
+        color: color ?? Colors.white.withOpacity(0.03),
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: borderColor ?? Colors.white.withOpacity(0.08)),
+      ),
+      child: child,
     );
   }
 

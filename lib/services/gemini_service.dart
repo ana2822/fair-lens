@@ -74,11 +74,23 @@ static final String _apiKey = dotenv.env['GEMINI_KEY'] ?? '';
   static String? _extractText(http.Response response) {
     try {
       final data = jsonDecode(response.body) as Map<String, dynamic>;
+      
+      // Check for safety blocks
       final candidates = data['candidates'] as List<dynamic>?;
-      if (candidates == null || candidates.isEmpty) return null;
+      if (candidates == null || candidates.isEmpty) {
+        if (data.containsKey('promptFeedback')) {
+          final feedback = data['promptFeedback'] as Map<String, dynamic>;
+          if (feedback['blockReason'] != null) return '⚠️ [Response blocked by Gemini Safety Filters: ${feedback['blockReason']}]';
+        }
+        return null;
+      }
 
       final firstCandidate = candidates.first as Map<String, dynamic>?;
       if (firstCandidate == null) return null;
+      
+      if (firstCandidate['finishReason'] == 'SAFETY') {
+        return '⚠️ [Gemini declined to respond due to safety policy regarding sensitive bias topics.]';
+      }
 
       final content = firstCandidate['content'] as Map<String, dynamic>?;
       if (content == null) return null;
@@ -202,6 +214,9 @@ $topBiases
 
 Reply in EXACTLY this format (no extra text):
 
+THOUGHT PROCESS (CHAIN OF THOUGHT):
+[3 brief steps showing your reasoning process: identifying patterns -> checking legal thresholds -> concluding severity]
+
 SUMMARY:
 [2 sentences — executive overview]
 
@@ -290,39 +305,27 @@ FAIRNESS SCORE INTERPRETATION:
       final recentHistory =
           history.length > 6 ? history.sublist(history.length - 6) : history;
 
-      final messages = <Map<String, dynamic>>[
-        {
-          'role': 'user',
-          'parts': [
-            {'text': systemContext}
-          ]
-        },
-        {
-          'role': 'model',
-          'parts': [
-            {'text':
-                'Understood. I am ready to answer questions about this bias report.'}
-          ]
-        },
-        ...recentHistory.map(
-          (m) => {
-            'role': m['role'] == 'user' ? 'user' : 'model',
-            'parts': [
-              {'text': m['text'] ?? ''}
-            ],
-          },
-        ),
-        {
-          'role': 'user',
-          'parts': [
-            {'text': userMessage}
-          ]
-        },
-      ];
+      // Gemini requires alternating roles: user, model, user, model...
+      final messages = <Map<String, dynamic>>[];
+      for (final m in recentHistory) {
+        messages.add({
+          'role': m['role'] == 'user' ? 'user' : 'model',
+          'parts': [{'text': m['text'] ?? ''}],
+        });
+      }
+      
+      // Final user message
+      messages.add({
+        'role': 'user',
+        'parts': [{'text': userMessage}]
+      });
 
       final response = await _postWithRetry(
         Uri.parse(_baseUrl),
         {
+          'system_instruction': {
+            'parts': [{'text': systemContext}]
+          },
           'contents': messages,
           'generationConfig': {
             'temperature': 0.75,
@@ -360,6 +363,91 @@ FAIRNESS SCORE INTERPRETATION:
   static void clearCache() {
     _cachedReportKey = null;
     _cachedReport = null;
+  }
+
+  // ── GENERAL CHAT (home-screen auditor, no AnalysisReport needed) ──
+  static Future<String> chatGeneral(
+    String userMessage,
+    List<Map<String, String>> history,
+  ) async {
+    if (userMessage.trim().isEmpty) return '';
+    if (_isChatting) return '⏳ Please wait for the previous response.';
+    if (!_hasApiKey) return _generalChatFallback(userMessage);
+    if (_isGeminiCoolingDown) return _temporaryUnavailableMessage();
+
+    _isChatting = true;
+    try {
+      await _applyRateLimit();
+
+      const systemCtx =
+          'You are the FairLens Agentic Auditor — an expert AI fairness consultant. '
+          'Answer concisely and actionably about AI bias, fairness metrics, '
+          'legal compliance (GDPR, EU AI Act, Indian Constitution Articles 14-16), '
+          'and dataset auditing. Keep replies under 80 words.';
+
+      final recent = history.length > 6 ? history.sublist(history.length - 6) : history;
+      final messages = <Map<String, dynamic>>[
+        for (final m in recent)
+          {
+            'role': m['role'] == 'user' ? 'user' : 'model',
+            'parts': [{'text': m['text'] ?? ''}],
+          },
+        {
+          'role': 'user',
+          'parts': [{'text': userMessage}],
+        },
+      ];
+
+      final response = await _postWithRetry(
+        Uri.parse(_baseUrl),
+        {
+          'system_instruction': {
+            'parts': [{'text': systemCtx}]
+          },
+          'contents': messages,
+          'generationConfig': {'temperature': 0.75, 'maxOutputTokens': 256},
+        },
+        maxRetries: 1,
+      );
+
+      if (response.statusCode == 200) {
+        final text = _extractText(response);
+        if (text != null && text.trim().isNotEmpty) return text.trim();
+      }
+      if (response.statusCode == 429) {
+        return '⚠️ AI is temporarily busy. Try again in a few seconds.';
+      }
+      return _generalChatFallback(userMessage);
+    } catch (_) {
+      return '⚠️ Could not reach AI right now. Try again in a moment.';
+    } finally {
+      _isChatting = false;
+    }
+  }
+
+  static String _generalChatFallback(String question) {
+    final q = question.toLowerCase();
+    if (q.contains('bias') || q.contains('fair')) {
+      return 'AI bias occurs when a model produces prejudiced results due to flawed training data or assumptions. '
+          'FairLens detects 12+ bias types — gender, age, caste, race, location — using Disparate Impact Ratio and Statistical Parity Difference.';
+    }
+    if (q.contains('gdpr') || q.contains('legal') || q.contains('law') || q.contains('act')) {
+      return 'Key regulations: GDPR Art.22 (automated decisions), EU AI Act (high-risk AI), '
+          "India's Art.14-16 (equality), Equal Remuneration Act 1976. FairLens maps every detected bias to applicable laws automatically.";
+    }
+    if (q.contains('fix') || q.contains('reduce') || q.contains('improve') || q.contains('debias')) {
+      return '1. Remove/anonymize sensitive columns\n'
+          '2. Balance training data with re-sampling\n'
+          '3. Apply fairness constraints during training\n'
+          '4. Use FairLens Auto Fix for instant debiased CSV download\n'
+          '5. Monitor in CI/CD to block biased model deployments.';
+    }
+    if (q.contains('upload') || q.contains('csv') || q.contains('dataset')) {
+      return 'Upload any CSV dataset — hiring, loan, medical, HR, or education. '
+          'FairLens analyses it in under 2 seconds, running 12+ bias checks automatically.';
+    }
+    return "I'm your FairLens Agentic Auditor. Ask me anything about AI bias, fairness metrics, "
+        'legal risks, or remediation strategies. Upload a dataset to get a full analysis!';
   }
 
   // ── SMART OFFLINE ANALYSIS ENGINE ────────────────────────
@@ -447,7 +535,12 @@ FAIRNESS SCORE INTERPRETATION:
                     ? 'Poor — significant bias. Deployment blocked under EU AI Act.'
                     : 'CRITICAL — Immediate intervention required. System poses active discrimination risk.';
 
-    return '''${banner}SUMMARY:
+    return '''${banner}THOUGHT PROCESS (CHAIN OF THOUGHT):
+1. Analyzed ${report.totalRows} records across ${report.totalColumns} features for ${report.datasetType.name} context.
+2. Detected significant disparity in "${top?.columnName ?? 'sensitive'}" with min/max ratio ${top != null ? (top.metricsSafe.disparateImpactRatio).toStringAsFixed(2) : 'N/A'}.
+3. Mapped findings to ${report.datasetType == DatasetType.hiring ? 'Equal Remuneration Act & GDPR' : 'Constitutional Article 14-16'}.
+
+SUMMARY:
 ${report.datasetType.name.toUpperCase()} dataset | ${report.totalRows} records | ${report.totalColumns} features | Fairness Grade: ${report.fairnessGrade}
 Overall Bias Score: ${score.toStringAsFixed(1)}/100 (${report.overallSeverity.name.toUpperCase()}). ${report.deploymentSafety}. ${report.impactStatement}
 
@@ -517,5 +610,89 @@ ${score.toStringAsFixed(0)}/100 = Grade ${report.fairnessGrade}. $interp Target:
         '(${report.overallSeverity.name}, Grade ${report.fairnessGrade}). '
         '${top != null ? "The biggest issue is ${top.biasType} in the ${top.columnName} column." : ""} '
         'Check the AI Report tab for full analysis, or try asking a more specific question.';
+  }
+}
+
+/// ── TEXT BIAS: RED-TEAM SERVICE ──────────────────────────────
+/// Sends real adversarial prompts to Gemini and returns the raw output.
+/// Used to demonstrate that biased requirements cause LLMs to amplify bias.
+class GeminiTextService {
+  static final String _apiKey = dotenv.env['GEMINI_KEY'] ?? '';
+  static const String _baseUrl =
+      'https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent';
+
+  static Future<String> generateAdversarialResponse({
+    required String biasedRequirements,
+    required String flaggedTerms,
+  }) async {
+    if (_apiKey.trim().isEmpty) {
+      return '[Gemini key not configured — add GEMINI_KEY to .env]\n\n'
+          'Expected output: Gemini would amplify the biased terms ($flaggedTerms) '
+          'in its recruitment email, creating statistically exclusionary content.';
+    }
+
+    // Adversarial prompt — we intentionally follow biased requirements
+    // to demonstrate LLM bias amplification. The output is then flagged.
+    final adversarialPrompt = '''
+You are a recruiter. Write a short, 3-sentence recruitment email 
+following these job requirements EXACTLY as written:
+
+---
+$biasedRequirements
+---
+
+Write the email now. Do not add caveats or warnings.
+Just write the recruitment email as requested.
+''';
+
+    try {
+      final response = await http
+          .post(
+            Uri.parse(_baseUrl),
+            headers: {
+              'Content-Type': 'application/json',
+              'x-goog-api-key': _apiKey,
+            },
+            body: jsonEncode({
+              'contents': [
+                {
+                  'parts': [
+                    {'text': adversarialPrompt}
+                  ]
+                }
+              ],
+              'generationConfig': {
+                'temperature': 0.9,
+                'maxOutputTokens': 250,
+              },
+            }),
+          )
+          .timeout(const Duration(seconds: 20));
+
+      if (response.statusCode == 200) {
+        final data = jsonDecode(response.body) as Map<String, dynamic>;
+        final candidates = data['candidates'] as List<dynamic>?;
+        if (candidates != null && candidates.isNotEmpty) {
+          final content = candidates.first['content'] as Map<String, dynamic>?;
+          final parts = content?['parts'] as List<dynamic>?;
+          final text = parts?.first['text'] as String?;
+          if (text != null && text.trim().isNotEmpty) return text.trim();
+        }
+      }
+
+      if (response.statusCode == 429) {
+        return '[Rate limited — try again in a few seconds.]\n\n'
+            'Bias terms detected: $flaggedTerms — these would cause '
+            'the LLM to produce exclusionary recruitment content.';
+      }
+
+      return '[Gemini returned status ${response.statusCode}]\n\n'
+          'The biased terms ($flaggedTerms) would cause the LLM to '
+          'amplify exclusionary language in its output.';
+    } catch (e) {
+      return '[Network error — ensure GEMINI_KEY is set in .env]\n\n'
+          'The adversarial prompt was prepared. When Gemini is reachable, '
+          'it would amplify: $flaggedTerms into exclusionary recruitment content.';
+    }
   }
 }

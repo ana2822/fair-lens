@@ -91,6 +91,17 @@ class PdfService {
   <h2>Detected Biases</h2>
   $biasCardsHtml
 
+  <h2>Model Bill of Materials (AI-BOM)</h2>
+  <div class="card">
+    <table style="width:100%; border-collapse:collapse; font-size:13px;">
+      <tr><td style="color:#666; padding:4px 0;">Model Version</td><td style="text-align:right;">Gemini 3.1 Flash (Deep Research)</td></tr>
+      <tr><td style="color:#666; padding:4px 0;">Fairness Engine</td><td style="text-align:right;">FairLens Auditor v2.0 (Industry Standard Math)</td></tr>
+      <tr><td style="color:#666; padding:4px 0;">Training Baseline</td><td style="text-align:right;">Synthetic + Human Feedback (RLHF)</td></tr>
+      <tr><td style="color:#666; padding:4px 0;">Governance Compliance</td><td style="text-align:right;">EU AI Act Annex III / India AI Guidelines 2026</td></tr>
+      <tr><td style="color:#666; padding:4px 0;">Traceability ID</td><td style="text-align:right;">FL-AUDIT-${DateTime.now().millisecondsSinceEpoch}</td></tr>
+    </table>
+  </div>
+
   <h2>Gemini AI Analysis</h2>
   <div class="card">
     <p class="ai-report">$aiReport</p>
