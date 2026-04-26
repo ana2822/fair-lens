@@ -324,22 +324,23 @@ class _TopNavState extends State<TopNav> with SingleTickerProviderStateMixin {
                 color: Colors.white, fontSize: 18, fontWeight: FontWeight.w800)),
             ),
             // Live badge
-            const SizedBox(width: 10),
-            Container(
-              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
-              decoration: BoxDecoration(
-                color: const Color(0xFF10B981).withValues(alpha: 0.12),
-                borderRadius: BorderRadius.circular(20),
-                border: Border.all(color: const Color(0xFF10B981).withValues(alpha: 0.3)),
+            if (w > 360) const SizedBox(width: 10),
+            if (w > 360)
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                decoration: BoxDecoration(
+                  color: const Color(0xFF10B981).withValues(alpha: 0.12),
+                  borderRadius: BorderRadius.circular(20),
+                  border: Border.all(color: const Color(0xFF10B981).withValues(alpha: 0.3)),
+                ),
+                child: Row(mainAxisSize: MainAxisSize.min, children: [
+                  _pulseDot(const Color(0xFF10B981)),
+                  const SizedBox(width: 5),
+                  Text('LIVE', style: GoogleFonts.spaceGrotesk(
+                    color: const Color(0xFF10B981), fontSize: 10, fontWeight: FontWeight.w700,
+                    letterSpacing: 1)),
+                ]),
               ),
-              child: Row(mainAxisSize: MainAxisSize.min, children: [
-                _pulseDot(const Color(0xFF10B981)),
-                const SizedBox(width: 5),
-                Text('LIVE', style: GoogleFonts.spaceGrotesk(
-                  color: const Color(0xFF10B981), fontSize: 10, fontWeight: FontWeight.w700,
-                  letterSpacing: 1)),
-              ]),
-            ),
             
             if (!isMobile) const SizedBox(width: 32),
             if (!isMobile) ...[
