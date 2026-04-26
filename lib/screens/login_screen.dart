@@ -29,6 +29,16 @@ class _LoginScreenState extends State<LoginScreen> with TickerProviderStateMixin
   late AnimationController _orbitController;
   late AnimationController _pulseController;
 
+  // Listen for auth state changes — if user signs in while LoginScreen is
+  // pushed ON TOP of HomeScreen (e.g. from the profile icon), pop ourselves.
+  void _setupAuthListener() {
+    AuthService().authStateChanges.listen((user) {
+      if (user != null && mounted && Navigator.canPop(context)) {
+        Navigator.pop(context);
+      }
+    });
+  }
+
   // Sample hiring dataset — bundled for instant demo, no upload needed
   static const String _sampleCsv = '''CandidateID,AgeGroup,Gender,Race,YearsExperience,InterviewScore,Hired
 1,25-34,Male,Majority,3,85,Yes
@@ -77,6 +87,8 @@ class _LoginScreenState extends State<LoginScreen> with TickerProviderStateMixin
     super.initState();
     _orbitController = AnimationController(vsync: this, duration: const Duration(seconds: 30))..repeat();
     _pulseController = AnimationController(vsync: this, duration: const Duration(seconds: 2))..repeat(reverse: true);
+    // Wire up auth listener — handles pop when signed in from HomeScreen
+    WidgetsBinding.instance.addPostFrameCallback((_) => _setupAuthListener());
   }
 
   @override
@@ -159,12 +171,23 @@ class _LoginScreenState extends State<LoginScreen> with TickerProviderStateMixin
 
   Future<void> _handleGoogleSignIn() async {
     setState(() => _isLoading = true);
+    // Always reset demo/mock mode before attempting real Google auth so the
+    // OAuth popup actually fires instead of instantly re-entering demo mode.
+    AuthService.useMockMode = false;
     try {
       await AuthService().signInWithGoogle();
+      // If we're still mounted and this screen was pushed on top of HomeScreen,
+      // pop back. If root, the StreamBuilder in main.dart will handle it.
+      if (mounted && Navigator.canPop(context)) {
+        Navigator.pop(context);
+      }
     } catch (e) {
       if (!mounted) return;
       setState(() => _isLoading = false);
-      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Google Sign-In failed: $e')));
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+        content: Text('Google Sign-In failed: $e'),
+        backgroundColor: const Color(0xFFEF4444),
+      ));
     }
   }
 

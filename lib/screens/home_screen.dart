@@ -19,6 +19,7 @@ import 'global_compliance_screen.dart';
 import '../services/auth_service.dart';
 import '../services/gemini_service.dart';
 import 'login_screen.dart';
+import 'profile_screen.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -321,16 +322,8 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
             ],
 
             const SizedBox(width: 8),
-            if (MediaQuery.of(context).size.width > 500)
-              IconButton(
-                icon: const Icon(Icons.logout_rounded, color: Colors.white54, size: 20),
-                onPressed: () async {
-                  await AuthService().signOut();
-                },
-                tooltip: 'Sign Out',
-              ),
-            if (MediaQuery.of(context).size.width > 500)
-              const SizedBox(width: 14),
+            _buildProfileOption(),
+            const SizedBox(width: 14),
             
             if (MediaQuery.of(context).size.width > 600)
               _glowButton('Upload Dataset', Icons.upload_rounded, _pickAndAnalyze)
@@ -343,6 +336,43 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
         ),
       ),
     ).animate().fadeIn(duration: 500.ms);
+  }
+
+  Widget _buildProfileOption() {
+    final user = AuthService().currentUser;
+    final isDemo = user == null || user.isAnonymous;
+
+    if (isDemo) {
+      return IconButton(
+        icon: const Icon(Icons.login_rounded, color: Colors.white70, size: 20),
+        onPressed: () {
+          Navigator.push(context, MaterialPageRoute(builder: (_) => const LoginScreen()));
+        },
+        tooltip: 'Login',
+      );
+    }
+
+    return GestureDetector(
+      onTap: () {
+        Navigator.push(context, MaterialPageRoute(builder: (_) => const ProfileScreen()));
+      },
+      child: Container(
+        margin: const EdgeInsets.symmetric(horizontal: 8),
+        width: 32,
+        height: 32,
+        decoration: BoxDecoration(
+          shape: BoxShape.circle,
+          border: Border.all(color: const Color(0xFF6366F1).withValues(alpha: 0.5), width: 1.5),
+          image: user.photoURL != null 
+              ? DecorationImage(image: NetworkImage(user.photoURL!), fit: BoxFit.cover)
+              : null,
+          color: user.photoURL == null ? const Color(0xFF8B5CF6) : null,
+        ),
+        child: user.photoURL == null
+            ? Center(child: Text(user.displayName?.isNotEmpty == true ? user.displayName![0].toUpperCase() : 'U', style: GoogleFonts.spaceGrotesk(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 14)))
+            : null,
+      ),
+    );
   }
 
   Widget _navBtn(String label, IconData icon, VoidCallback onTap, bool showText) {
