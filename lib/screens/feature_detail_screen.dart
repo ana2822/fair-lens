@@ -46,7 +46,7 @@ class FeatureDetailScreen extends StatelessWidget {
                   Container(
                     decoration: BoxDecoration(
                       gradient: LinearGradient(
-                        colors: [feature.color.withOpacity(0.4), Colors.transparent],
+                        colors: [feature.color.withValues(alpha: 0.4), Colors.transparent],
                         begin: Alignment.topCenter,
                         end: Alignment.bottomCenter,
                       ),
@@ -96,7 +96,7 @@ class FeatureDetailScreen extends StatelessWidget {
                     ),
                   ),
                   const SizedBox(height: 16),
-                  ...feature.highlights.map((h) => _buildHighlightItem(h)).toList(),
+                  ...feature.highlights.map((h) => _buildHighlightItem(h)),
                   
                   const SizedBox(height: 48),
                   
@@ -118,7 +118,7 @@ class FeatureDetailScreen extends StatelessWidget {
           Container(
             padding: const EdgeInsets.all(8),
             decoration: BoxDecoration(
-              color: feature.color.withOpacity(0.1),
+              color: feature.color.withValues(alpha: 0.1),
               shape: BoxShape.circle,
             ),
             child: Icon(Icons.check, color: feature.color, size: 16),
@@ -144,9 +144,9 @@ class FeatureDetailScreen extends StatelessWidget {
           width: double.infinity,
           padding: const EdgeInsets.all(32),
           decoration: BoxDecoration(
-            color: Colors.white.withOpacity(0.05),
+            color: Colors.white.withValues(alpha: 0.05),
             borderRadius: BorderRadius.circular(24),
-            border: Border.all(color: Colors.white.withOpacity(0.1)),
+            border: Border.all(color: Colors.white.withValues(alpha: 0.1)),
           ),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,

@@ -10,8 +10,6 @@ import '../services/pdf_service.dart';
 import '../services/alert_service.dart';
 import 'compare_screen.dart';
 import 'dart:ui';
-// ignore: avoid_web_libraries_in_flutter
-import 'dart:html' as html;
 class AnalysisScreen extends StatefulWidget {
   final AnalysisReport result;
   final List<Map<String, String>> rawData;
@@ -27,7 +25,6 @@ class _AnalysisScreenState extends State<AnalysisScreen> with TickerProviderStat
   String _geminiAnalysis = '';
   bool _loadingGemini = false;
   bool _geminiCalled = false;       // ✅ prevents duplicate calls
-  String? _geminiError;             // ✅ stores error/fallback reason
   int _selectedBiasIndex = 0;
   AutoFixResult? _fixResult;
   bool _fixing = false;
@@ -45,7 +42,6 @@ class _AnalysisScreenState extends State<AnalysisScreen> with TickerProviderStat
 
     if (widget.result.overallBiasScore > 60) {
       _bellController.repeat(reverse: true);
-      _playAlarm();
     }
 
     // ✅ Clear cache for new dataset, then load once after 500ms delay
@@ -53,13 +49,6 @@ class _AnalysisScreenState extends State<AnalysisScreen> with TickerProviderStat
     Future.delayed(const Duration(milliseconds: 500), _loadGeminiAnalysis);
     _computeWhatIf();
     _saveToFirebase();
-  }
-
-  void _playAlarm() {
-    try {
-      final audio = html.AudioElement('https://actions.google.com/sounds/v1/alarms/alarm_clock.ogg');
-      audio.play();
-    } catch (_) {}
   }
 
   @override
@@ -77,17 +66,15 @@ class _AnalysisScreenState extends State<AnalysisScreen> with TickerProviderStat
     if (!mounted) return;
 
     _geminiCalled = true;
-    setState(() { _loadingGemini = true; _geminiError = null; });
+    setState(() { _loadingGemini = true; });
 
     final analysis = await GeminiService.analyzeWithGemini(widget.result);
     if (!mounted) return;
 
     // Detect fallback banner
-    final isFallback = analysis.trimLeft().startsWith('\u26a0');
     setState(() {
       _geminiAnalysis = analysis;
       _loadingGemini = false;
-      _geminiError = isFallback ? analysis.split('\n').first : null;
     });
     // Save again with the AI report included
     _saveToFirebase();
@@ -231,7 +218,7 @@ class _AnalysisScreenState extends State<AnalysisScreen> with TickerProviderStat
             const SizedBox(height: 16),
             Container(
               padding: const EdgeInsets.all(12),
-              decoration: BoxDecoration(color: const Color(0xFF6366F1).withOpacity(0.1), borderRadius: BorderRadius.circular(8)),
+              decoration: BoxDecoration(color: const Color(0xFF6366F1).withValues(alpha: 0.1), borderRadius: BorderRadius.circular(8)),
               child: const Text(
                 'This AI-BOM ensures transparency and traceability for regulatory audits in accordance with 2026 Governance standards.',
                 style: TextStyle(color: Colors.white70, fontSize: 11, height: 1.4),
@@ -271,7 +258,7 @@ class _AnalysisScreenState extends State<AnalysisScreen> with TickerProviderStat
         tilePadding: EdgeInsets.zero,
         leading: Container(
           padding: const EdgeInsets.all(8),
-          decoration: BoxDecoration(color: const Color(0xFF10B981).withOpacity(0.1), shape: BoxShape.circle),
+          decoration: BoxDecoration(color: const Color(0xFF10B981).withValues(alpha: 0.1), shape: BoxShape.circle),
           child: const Icon(Icons.psychology_outlined, color: Color(0xFF10B981), size: 18),
         ),
         title: Text('View AI Reasoning (Thought Signature)', style: GoogleFonts.spaceGrotesk(color: const Color(0xFF10B981), fontSize: 14, fontWeight: FontWeight.bold)),
@@ -280,9 +267,9 @@ class _AnalysisScreenState extends State<AnalysisScreen> with TickerProviderStat
             padding: const EdgeInsets.all(16),
             margin: const EdgeInsets.only(bottom: 12),
             decoration: BoxDecoration(
-              color: const Color(0xFF10B981).withOpacity(0.05),
+              color: const Color(0xFF10B981).withValues(alpha: 0.05),
               borderRadius: BorderRadius.circular(12),
-              border: Border.all(color: const Color(0xFF10B981).withOpacity(0.2)),
+              border: Border.all(color: const Color(0xFF10B981).withValues(alpha: 0.2)),
             ),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
@@ -295,7 +282,7 @@ class _AnalysisScreenState extends State<AnalysisScreen> with TickerProviderStat
                   children: [
                     const Icon(Icons.verified_user_outlined, color: Color(0xFF10B981), size: 14),
                     const SizedBox(width: 6),
-                    Text('Verified 2026 Audit Logic', style: TextStyle(color: const Color(0xFF10B981).withOpacity(0.6), fontSize: 10)),
+                    Text('Verified 2026 Audit Logic', style: TextStyle(color: const Color(0xFF10B981).withValues(alpha: 0.6), fontSize: 10)),
                   ],
                 ),
               ],
@@ -338,9 +325,9 @@ class _AnalysisScreenState extends State<AnalysisScreen> with TickerProviderStat
     return Container(
       padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
-        color: color.withOpacity(0.06),
+        color: color.withValues(alpha: 0.06),
         borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: color.withOpacity(0.3)),
+        border: Border.all(color: color.withValues(alpha: 0.3)),
       ),
       child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
         Row(children: [
@@ -478,8 +465,8 @@ class _AnalysisScreenState extends State<AnalysisScreen> with TickerProviderStat
         const SizedBox(height: 12),
         _glassContainer(
           padding: const EdgeInsets.all(20),
-          color: const Color(0xFF6366F1).withOpacity(0.05),
-          borderColor: const Color(0xFF6366F1).withOpacity(0.2),
+          color: const Color(0xFF6366F1).withValues(alpha: 0.05),
+          borderColor: const Color(0xFF6366F1).withValues(alpha: 0.2),
           child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
             Row(children: [
               const Icon(Icons.psychology_outlined, color: Color(0xFF818CF8), size: 24),
@@ -490,15 +477,15 @@ class _AnalysisScreenState extends State<AnalysisScreen> with TickerProviderStat
             Text(
               'Bias in this model is primarily caused by statistical imbalances in the "${r.biasResults.isNotEmpty ? r.biasResults.first.columnName : 'sensitive'}" feature. '
               'The model has learned a correlation between "${r.biasResults.isNotEmpty ? r.biasResults.first.columnName : 'demographics'}" and the outcome column "${r.headers.firstWhere((h) => h.toLowerCase().contains('outcome') || h.toLowerCase().contains('status') || h.toLowerCase().contains('hired'), orElse: () => 'target')}".',
-              style: GoogleFonts.inter(color: Colors.white.withOpacity(0.7), fontSize: 13, height: 1.5),
+              style: GoogleFonts.inter(color: Colors.white.withValues(alpha: 0.7), fontSize: 13, height: 1.5),
             ),
             const SizedBox(height: 12),
             Container(
               padding: const EdgeInsets.all(12),
-              decoration: BoxDecoration(color: Colors.black.withOpacity(0.3), borderRadius: BorderRadius.circular(8)),
-              child: Row(children: [
-                const Icon(Icons.info_outline, color: Color(0xFF6366F1), size: 16),
-                const SizedBox(width: 10),
+              decoration: BoxDecoration(color: Colors.black.withValues(alpha: 0.3), borderRadius: BorderRadius.circular(8)),
+              child: const Row(children: [
+                Icon(Icons.info_outline, color: Color(0xFF6366F1), size: 16),
+                SizedBox(width: 10),
                 Expanded(child: Text('Note: This bias exists because of historically skewed data where certain groups had lower representation or access.', style: TextStyle(color: Colors.white54, fontSize: 11))),
               ]),
             ),
@@ -658,7 +645,7 @@ class _AnalysisScreenState extends State<AnalysisScreen> with TickerProviderStat
           Container(
             padding: const EdgeInsets.all(8),
             decoration: BoxDecoration(
-              color: (isOffline ? const Color(0xFFF59E0B) : const Color(0xFF6366F1)).withOpacity(0.2),
+              color: (isOffline ? const Color(0xFFF59E0B) : const Color(0xFF6366F1)).withValues(alpha: 0.2),
               borderRadius: BorderRadius.circular(10)
             ),
             child: Icon(
@@ -676,7 +663,7 @@ class _AnalysisScreenState extends State<AnalysisScreen> with TickerProviderStat
           if (isOffline)
             Container(
               padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
-              decoration: BoxDecoration(color: const Color(0xFFF59E0B).withOpacity(0.1), borderRadius: BorderRadius.circular(4), border: Border.all(color: const Color(0xFFF59E0B).withOpacity(0.3))),
+              decoration: BoxDecoration(color: const Color(0xFFF59E0B).withValues(alpha: 0.1), borderRadius: BorderRadius.circular(4), border: Border.all(color: const Color(0xFFF59E0B).withValues(alpha: 0.3))),
               child: Text('OFFLINE MODE', style: GoogleFonts.jetBrainsMono(color: const Color(0xFFF59E0B), fontSize: 9, fontWeight: FontWeight.bold)),
             ),
         ]),
@@ -703,12 +690,12 @@ class _AnalysisScreenState extends State<AnalysisScreen> with TickerProviderStat
             decoration: BoxDecoration(
               color: const Color(0xFF0D0D1A),
               borderRadius: BorderRadius.circular(16),
-              border: Border.all(color: (isOffline ? const Color(0xFFF59E0B) : const Color(0xFF6366F1)).withOpacity(0.3))
+              border: Border.all(color: (isOffline ? const Color(0xFFF59E0B) : const Color(0xFF6366F1)).withValues(alpha: 0.3))
             ),
             child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
               Text(
                 _geminiAnalysis,
-                style: GoogleFonts.inter(color: Colors.white.withOpacity(0.9), fontSize: 14, height: 1.7)
+                style: GoogleFonts.inter(color: Colors.white.withValues(alpha: 0.9), fontSize: 14, height: 1.7)
               ),
               const SizedBox(height: 20),
               Row(children: [
@@ -733,14 +720,14 @@ class _AnalysisScreenState extends State<AnalysisScreen> with TickerProviderStat
         ...widget.result.biasResults.map((b) => Container(
           margin: const EdgeInsets.only(bottom: 10),
           padding: const EdgeInsets.all(14),
-          decoration: BoxDecoration(color: const Color(0xFF0D0D1A), borderRadius: BorderRadius.circular(12), border: Border.all(color: _sevColor(b.severity).withOpacity(0.3))),
+          decoration: BoxDecoration(color: const Color(0xFF0D0D1A), borderRadius: BorderRadius.circular(12), border: Border.all(color: _sevColor(b.severity).withValues(alpha: 0.3))),
           child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
             Row(children: [
               Icon(Icons.gavel, color: _sevColor(b.severity), size: 16),
               const SizedBox(width: 8),
               Text(b.biasType, style: GoogleFonts.spaceGrotesk(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 13)),
               const Spacer(),
-              Container(padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3), decoration: BoxDecoration(color: _sevColor(b.severity).withOpacity(0.15), borderRadius: BorderRadius.circular(6)), child: Text(_sevLabel(b.severity), style: TextStyle(color: _sevColor(b.severity), fontSize: 10, fontWeight: FontWeight.bold))),
+              Container(padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3), decoration: BoxDecoration(color: _sevColor(b.severity).withValues(alpha: 0.15), borderRadius: BorderRadius.circular(6)), child: Text(_sevLabel(b.severity), style: TextStyle(color: _sevColor(b.severity), fontSize: 10, fontWeight: FontWeight.bold))),
             ]),
             const SizedBox(height: 6),
             Text('⚖️ ${b.lawViolatedSafe}', style: GoogleFonts.spaceGrotesk(color: const Color(0xFFF59E0B), fontSize: 12, height: 1.4)),
@@ -759,9 +746,9 @@ class _AnalysisScreenState extends State<AnalysisScreen> with TickerProviderStat
       child: Container(
         padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
         decoration: BoxDecoration(
-          color: Colors.white.withOpacity(0.05),
+          color: Colors.white.withValues(alpha: 0.05),
           borderRadius: BorderRadius.circular(8),
-          border: Border.all(color: Colors.white.withOpacity(0.1)),
+          border: Border.all(color: Colors.white.withValues(alpha: 0.1)),
         ),
         child: Row(children: [
           Icon(icon, size: 14, color: const Color(0xFF6366F1)),
@@ -779,7 +766,7 @@ class _AnalysisScreenState extends State<AnalysisScreen> with TickerProviderStat
       decoration: BoxDecoration(
         color: const Color(0xFF0D0D1A),
         borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: const Color(0xFF6366F1).withOpacity(0.2)),
+        border: Border.all(color: const Color(0xFF6366F1).withValues(alpha: 0.2)),
       ),
       child: Column(children: [
         const SizedBox(
@@ -791,9 +778,9 @@ class _AnalysisScreenState extends State<AnalysisScreen> with TickerProviderStat
         const SizedBox(height: 8),
         Text('Processing dataset features & legal risks...', style: GoogleFonts.spaceGrotesk(color: Colors.white54, fontSize: 13)),
         const SizedBox(height: 16),
-        LinearProgressIndicator(
+        const LinearProgressIndicator(
           backgroundColor: Colors.white10,
-          color: const Color(0xFF6366F1),
+          color: Color(0xFF6366F1),
           minHeight: 2,
         ).animate(onPlay: (c) => c.repeat()).shimmer(duration: 1200.ms),
       ]),
@@ -829,7 +816,7 @@ class _AnalysisScreenState extends State<AnalysisScreen> with TickerProviderStat
           Container(
             padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
             decoration: BoxDecoration(color: const Color(0xFF10B981).withValues(alpha: 0.15), borderRadius: BorderRadius.circular(8)),
-            child: Text('bias ↓ ${f['drop'].toStringAsFixed(0)}%', style: TextStyle(color: const Color(0xFF10B981), fontWeight: FontWeight.bold, fontSize: 12)),
+            child: Text('bias ↓ ${f['drop'].toStringAsFixed(0)}%', style: const TextStyle(color: Color(0xFF10B981), fontWeight: FontWeight.bold, fontSize: 12)),
           ),
         ]),
       )),
@@ -837,7 +824,6 @@ class _AnalysisScreenState extends State<AnalysisScreen> with TickerProviderStat
   }
 
   Widget _buildAutoFix() {
-    final r = widget.result;
     return SingleChildScrollView(
       padding: const EdgeInsets.all(20),
       child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [

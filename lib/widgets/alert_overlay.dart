@@ -82,7 +82,7 @@ class _AlertBanner extends StatelessWidget {
         border: Border(left: BorderSide(color: alert.color, width: 4)),
         boxShadow: [
           BoxShadow(
-            color: alert.color.withOpacity(0.25),
+            color: alert.color.withValues(alpha: 0.25),
             blurRadius: 24,
             spreadRadius: 0,
           ),
@@ -104,7 +104,7 @@ class _AlertBanner extends StatelessWidget {
                     Text(
                       _timeAgo(alert.timestamp),
                       style: TextStyle(
-                        color: Colors.white.withOpacity(0.35),
+                        color: Colors.white.withValues(alpha: 0.35),
                         fontSize: 11,
                         fontFamily: 'monospace',
                       ),
@@ -114,7 +114,7 @@ class _AlertBanner extends StatelessWidget {
                   Text(
                     alert.message,
                     style: GoogleFonts.inter(
-                      color: Colors.white.withOpacity(0.88),
+                      color: Colors.white.withValues(alpha: 0.88),
                       fontSize: 13,
                       fontWeight: FontWeight.w500,
                     ),
@@ -131,7 +131,7 @@ class _AlertBanner extends StatelessWidget {
                   child: Padding(
                     padding: const EdgeInsets.all(4),
                     child: Icon(Icons.close,
-                        color: Colors.white.withOpacity(0.4), size: 16),
+                        color: Colors.white.withValues(alpha: 0.4), size: 16),
                   ),
                 ),
                 const SizedBox(height: 2),
@@ -170,9 +170,9 @@ class _TypeBadge extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 2),
       decoration: BoxDecoration(
-        color: alert.color.withOpacity(0.15),
+        color: alert.color.withValues(alpha: 0.15),
         borderRadius: BorderRadius.circular(4),
-        border: Border.all(color: alert.color.withOpacity(0.4)),
+        border: Border.all(color: alert.color.withValues(alpha: 0.4)),
       ),
       child: Text(
         alert.label,
@@ -199,7 +199,7 @@ class _AlertHistoryPanel extends StatelessWidget {
     return GestureDetector(
       onTap: onClose,
       child: Container(
-        color: Colors.black.withOpacity(0.6),
+        color: Colors.black.withValues(alpha: 0.6),
         child: Center(
           child: GestureDetector(
             onTap: () {},
@@ -210,10 +210,10 @@ class _AlertHistoryPanel extends StatelessWidget {
               decoration: BoxDecoration(
                 color: const Color(0xFF0D0D1A),
                 borderRadius: BorderRadius.circular(20),
-                border: Border.all(color: Colors.white.withOpacity(0.08)),
+                border: Border.all(color: Colors.white.withValues(alpha: 0.08)),
                 boxShadow: [
                   BoxShadow(
-                    color: const Color(0xFF6366F1).withOpacity(0.2),
+                    color: const Color(0xFF6366F1).withValues(alpha: 0.2),
                     blurRadius: 40,
                   ),
                 ],
@@ -240,7 +240,7 @@ class _AlertHistoryPanel extends StatelessWidget {
                           padding: const EdgeInsets.symmetric(
                               horizontal: 8, vertical: 2),
                           decoration: BoxDecoration(
-                            color: Colors.white.withOpacity(0.08),
+                            color: Colors.white.withValues(alpha: 0.08),
                             borderRadius: BorderRadius.circular(20),
                           ),
                           child: Text(
@@ -257,7 +257,7 @@ class _AlertHistoryPanel extends StatelessWidget {
                       ],
                     ),
                   ),
-                  Divider(color: Colors.white.withOpacity(0.06), height: 1),
+                  Divider(color: Colors.white.withValues(alpha: 0.06), height: 1),
 
                   // History list
                   Expanded(
@@ -281,7 +281,7 @@ class _AlertHistoryPanel extends StatelessWidget {
                             padding: const EdgeInsets.symmetric(vertical: 8),
                             itemCount: history.length,
                             separatorBuilder: (_, __) => Divider(
-                              color: Colors.white.withOpacity(0.04),
+                              color: Colors.white.withValues(alpha: 0.04),
                               height: 1,
                             ),
                             itemBuilder: (_, i) {
@@ -291,7 +291,7 @@ class _AlertHistoryPanel extends StatelessWidget {
                                   width: 36,
                                   height: 36,
                                   decoration: BoxDecoration(
-                                    color: a.color.withOpacity(0.12),
+                                    color: a.color.withValues(alpha: 0.12),
                                     borderRadius: BorderRadius.circular(8),
                                   ),
                                   child: Center(
@@ -308,14 +308,14 @@ class _AlertHistoryPanel extends StatelessWidget {
                                 ),
                                 subtitle: Text(
                                   _fullTime(a.timestamp),
-                                  style: TextStyle(
+                                  style: const TextStyle(
                                       color: Colors.white38, fontSize: 11),
                                 ),
                                 trailing: Container(
                                   padding: const EdgeInsets.symmetric(
                                       horizontal: 6, vertical: 2),
                                   decoration: BoxDecoration(
-                                    color: a.color.withOpacity(0.12),
+                                    color: a.color.withValues(alpha: 0.12),
                                     borderRadius: BorderRadius.circular(4),
                                   ),
                                   child: Text(a.label,
@@ -329,7 +329,7 @@ class _AlertHistoryPanel extends StatelessWidget {
                   ),
 
                   // Footer
-                  Divider(color: Colors.white.withOpacity(0.06), height: 1),
+                  Divider(color: Colors.white.withValues(alpha: 0.06), height: 1),
                   Padding(
                     padding: const EdgeInsets.symmetric(
                         horizontal: 16, vertical: 10),

@@ -40,8 +40,11 @@ class _FaceBiasScreenState extends State<FaceBiasScreen> {
         .map((f) => (bytes: f.bytes!, name: f.name))
         .toList();
     setState(() {
-      if (isGroupA) _groupAImages = imgs;
-      else _groupBImages = imgs;
+      if (isGroupA) {
+        _groupAImages = imgs;
+      } else {
+        _groupBImages = imgs;
+      }
     });
   }
 
@@ -84,9 +87,9 @@ class _FaceBiasScreenState extends State<FaceBiasScreen> {
               margin: const EdgeInsets.only(right: 16),
               padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
               decoration: BoxDecoration(
-                color: const Color(0xFFF59E0B).withOpacity(0.1),
+                color: const Color(0xFFF59E0B).withValues(alpha: 0.1),
                 borderRadius: BorderRadius.circular(6),
-                border: Border.all(color: const Color(0xFFF59E0B).withOpacity(0.3)),
+                border: Border.all(color: const Color(0xFFF59E0B).withValues(alpha: 0.3)),
               ),
               child: Text('ADD VISION_KEY TO .env', style: GoogleFonts.jetBrainsMono(color: const Color(0xFFF59E0B), fontSize: 9, fontWeight: FontWeight.bold)),
             )
@@ -95,9 +98,9 @@ class _FaceBiasScreenState extends State<FaceBiasScreen> {
               margin: const EdgeInsets.only(right: 16),
               padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
               decoration: BoxDecoration(
-                color: const Color(0xFF10B981).withOpacity(0.1),
+                color: const Color(0xFF10B981).withValues(alpha: 0.1),
                 borderRadius: BorderRadius.circular(6),
-                border: Border.all(color: const Color(0xFF10B981).withOpacity(0.3)),
+                border: Border.all(color: const Color(0xFF10B981).withValues(alpha: 0.3)),
               ),
               child: Text('VISION API CONNECTED', style: GoogleFonts.jetBrainsMono(color: const Color(0xFF10B981), fontSize: 9, fontWeight: FontWeight.bold)),
             ),
@@ -156,8 +159,8 @@ class _FaceBiasScreenState extends State<FaceBiasScreen> {
     return Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
       _heading('Upload Image Sets'),
       const SizedBox(height: 8),
-      Text('Upload at least 3–5 images per group for meaningful statistics.',
-        style: const TextStyle(color: Colors.white38, fontSize: 13)),
+      const Text('Upload at least 3–5 images per group for meaningful statistics.',
+        style: TextStyle(color: Colors.white38, fontSize: 13)),
       const SizedBox(height: 24),
       Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
         Expanded(child: _uploadSlot(_groupANameCtrl.text, _groupAImages, const Color(0xFF6366F1), () => _pickImages(true))),
@@ -186,9 +189,9 @@ class _FaceBiasScreenState extends State<FaceBiasScreen> {
       child: Container(
         padding: const EdgeInsets.all(20),
         decoration: BoxDecoration(
-          color: color.withOpacity(0.04),
+          color: color.withValues(alpha: 0.04),
           borderRadius: BorderRadius.circular(16),
-          border: Border.all(color: color.withOpacity(0.25)),
+          border: Border.all(color: color.withValues(alpha: 0.25)),
         ),
         child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
           Row(children: [
@@ -201,20 +204,20 @@ class _FaceBiasScreenState extends State<FaceBiasScreen> {
             Container(
               height: 100,
               decoration: BoxDecoration(
-                color: color.withOpacity(0.06),
+                color: color.withValues(alpha: 0.06),
                 borderRadius: BorderRadius.circular(12),
-                border: Border.all(color: color.withOpacity(0.2), style: BorderStyle.solid),
+                border: Border.all(color: color.withValues(alpha: 0.2), style: BorderStyle.solid),
               ),
               child: Center(child: Column(mainAxisSize: MainAxisSize.min, children: [
-                Icon(Icons.upload_file_rounded, color: color.withOpacity(0.6), size: 28),
+                Icon(Icons.upload_file_rounded, color: color.withValues(alpha: 0.6), size: 28),
                 const SizedBox(height: 8),
-                Text('Tap to select images', style: TextStyle(color: color.withOpacity(0.6), fontSize: 12)),
+                Text('Tap to select images', style: TextStyle(color: color.withValues(alpha: 0.6), fontSize: 12)),
               ])),
             ),
           ] else ...[
             Container(
               padding: const EdgeInsets.all(12),
-              decoration: BoxDecoration(color: color.withOpacity(0.1), borderRadius: BorderRadius.circular(10)),
+              decoration: BoxDecoration(color: color.withValues(alpha: 0.1), borderRadius: BorderRadius.circular(10)),
               child: Row(children: [
                 Icon(Icons.check_circle_rounded, color: color, size: 18),
                 const SizedBox(width: 8),
@@ -228,12 +231,12 @@ class _FaceBiasScreenState extends State<FaceBiasScreen> {
               child: Text('• ${img.name}', style: const TextStyle(color: Colors.white38, fontSize: 11), overflow: TextOverflow.ellipsis),
             )),
             if (images.length > 3)
-              Text('  +${images.length - 3} more', style: TextStyle(color: color.withOpacity(0.5), fontSize: 11)),
+              Text('  +${images.length - 3} more', style: TextStyle(color: color.withValues(alpha: 0.5), fontSize: 11)),
           ],
           const SizedBox(height: 12),
           Container(
             padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-            decoration: BoxDecoration(color: color.withOpacity(0.1), borderRadius: BorderRadius.circular(8), border: Border.all(color: color.withOpacity(0.3))),
+            decoration: BoxDecoration(color: color.withValues(alpha: 0.1), borderRadius: BorderRadius.circular(8), border: Border.all(color: color.withValues(alpha: 0.3))),
             child: Text(images.isEmpty ? 'Choose Images' : 'Change Images', style: GoogleFonts.spaceGrotesk(color: color, fontSize: 12, fontWeight: FontWeight.bold)),
           ),
         ]),
@@ -251,7 +254,7 @@ class _FaceBiasScreenState extends State<FaceBiasScreen> {
         decoration: BoxDecoration(
           color: const Color(0xFF0D0D1A),
           borderRadius: BorderRadius.circular(24),
-          border: Border.all(color: const Color(0xFF6366F1).withOpacity(0.3)),
+          border: Border.all(color: const Color(0xFF6366F1).withValues(alpha: 0.3)),
         ),
         child: Column(children: [
           const Icon(Icons.remove_red_eye_outlined, color: Color(0xFF818CF8), size: 48),
@@ -265,7 +268,7 @@ class _FaceBiasScreenState extends State<FaceBiasScreen> {
             child: LinearProgressIndicator(
               value: progress,
               minHeight: 8,
-              backgroundColor: Colors.white.withOpacity(0.05),
+              backgroundColor: Colors.white.withValues(alpha: 0.05),
               color: const Color(0xFF6366F1),
             ),
           ),
@@ -292,8 +295,8 @@ class _FaceBiasScreenState extends State<FaceBiasScreen> {
     return Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
       _heading('Audit Results'),
       const SizedBox(height: 8),
-      Text('Computed from real Google Vision API detectionConfidence scores.',
-        style: const TextStyle(color: Colors.white38, fontSize: 12)),
+      const Text('Computed from real Google Vision API detectionConfidence scores.',
+        style: TextStyle(color: Colors.white38, fontSize: 12)),
       const SizedBox(height: 24),
 
       // Verdict banner
@@ -301,9 +304,9 @@ class _FaceBiasScreenState extends State<FaceBiasScreen> {
         width: double.infinity,
         padding: const EdgeInsets.all(24),
         decoration: BoxDecoration(
-          color: verdictColor.withOpacity(0.07),
+          color: verdictColor.withValues(alpha: 0.07),
           borderRadius: BorderRadius.circular(20),
-          border: Border.all(color: verdictColor.withOpacity(0.3)),
+          border: Border.all(color: verdictColor.withValues(alpha: 0.3)),
         ),
         child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
           Row(children: [
@@ -322,7 +325,7 @@ class _FaceBiasScreenState extends State<FaceBiasScreen> {
       // Core metric
       Container(
         padding: const EdgeInsets.all(20),
-        decoration: BoxDecoration(color: const Color(0xFF0D0D1A), borderRadius: BorderRadius.circular(16), border: Border.all(color: Colors.white.withOpacity(0.08))),
+        decoration: BoxDecoration(color: const Color(0xFF0D0D1A), borderRadius: BorderRadius.circular(16), border: Border.all(color: Colors.white.withValues(alpha: 0.08))),
         child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
           Text('Disparate Impact Ratio', style: GoogleFonts.spaceGrotesk(color: Colors.white54, fontSize: 12)),
           const SizedBox(height: 4),
@@ -331,7 +334,7 @@ class _FaceBiasScreenState extends State<FaceBiasScreen> {
           const SizedBox(height: 12),
           ClipRRect(
             borderRadius: BorderRadius.circular(6),
-            child: LinearProgressIndicator(value: r.disparateImpactRatio.clamp(0, 1), minHeight: 6, backgroundColor: Colors.white.withOpacity(0.05), color: verdictColor),
+            child: LinearProgressIndicator(value: r.disparateImpactRatio.clamp(0, 1), minHeight: 6, backgroundColor: Colors.white.withValues(alpha: 0.05), color: verdictColor),
           ),
         ]),
       ),
@@ -368,9 +371,9 @@ class _FaceBiasScreenState extends State<FaceBiasScreen> {
     return Container(
       padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
-        color: color.withOpacity(0.05),
+        color: color.withValues(alpha: 0.05),
         borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: color.withOpacity(0.2)),
+        border: Border.all(color: color.withValues(alpha: 0.2)),
       ),
       child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
         Text(g.groupName, style: GoogleFonts.spaceGrotesk(color: Colors.white, fontSize: 14, fontWeight: FontWeight.bold)),
@@ -399,7 +402,7 @@ class _FaceBiasScreenState extends State<FaceBiasScreen> {
 
   Widget _infoCard(String title, String body, Color color, IconData icon) => Container(
     padding: const EdgeInsets.all(20),
-    decoration: BoxDecoration(color: color.withOpacity(0.05), borderRadius: BorderRadius.circular(16), border: Border.all(color: color.withOpacity(0.2))),
+    decoration: BoxDecoration(color: color.withValues(alpha: 0.05), borderRadius: BorderRadius.circular(16), border: Border.all(color: color.withValues(alpha: 0.2))),
     child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
       Row(children: [
         Icon(icon, color: color, size: 18),
@@ -413,7 +416,7 @@ class _FaceBiasScreenState extends State<FaceBiasScreen> {
 
   Widget _errorCard(String msg) => Container(
     padding: const EdgeInsets.all(16),
-    decoration: BoxDecoration(color: const Color(0xFFEF4444).withOpacity(0.08), borderRadius: BorderRadius.circular(12), border: Border.all(color: const Color(0xFFEF4444).withOpacity(0.3))),
+    decoration: BoxDecoration(color: const Color(0xFFEF4444).withValues(alpha: 0.08), borderRadius: BorderRadius.circular(12), border: Border.all(color: const Color(0xFFEF4444).withValues(alpha: 0.3))),
     child: Row(children: [
       const Icon(Icons.error_outline, color: Color(0xFFEF4444), size: 18),
       const SizedBox(width: 10),
@@ -428,9 +431,9 @@ class _FaceBiasScreenState extends State<FaceBiasScreen> {
       hintText: hint,
       hintStyle: const TextStyle(color: Colors.white24),
       filled: true,
-      fillColor: Colors.white.withOpacity(0.03),
-      border: OutlineInputBorder(borderRadius: BorderRadius.circular(10), borderSide: BorderSide(color: color.withOpacity(0.3))),
-      enabledBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(10), borderSide: BorderSide(color: color.withOpacity(0.2))),
+      fillColor: Colors.white.withValues(alpha: 0.03),
+      border: OutlineInputBorder(borderRadius: BorderRadius.circular(10), borderSide: BorderSide(color: color.withValues(alpha: 0.3))),
+      enabledBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(10), borderSide: BorderSide(color: color.withValues(alpha: 0.2))),
       focusedBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(10), borderSide: BorderSide(color: color)),
       contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
     ),
@@ -462,7 +465,7 @@ class _FaceBiasScreenState extends State<FaceBiasScreen> {
 
   Widget _badge(String label, Color color) => Container(
     padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-    decoration: BoxDecoration(color: color.withOpacity(0.12), borderRadius: BorderRadius.circular(6), border: Border.all(color: color.withOpacity(0.3))),
+    decoration: BoxDecoration(color: color.withValues(alpha: 0.12), borderRadius: BorderRadius.circular(6), border: Border.all(color: color.withValues(alpha: 0.3))),
     child: Text(label, style: GoogleFonts.jetBrainsMono(color: color, fontSize: 10, fontWeight: FontWeight.bold)),
   );
 }

@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import 'package:google_fonts/google_fonts.dart';
-import 'dart:ui';
 
 class PublicPortalScreen extends StatelessWidget {
   const PublicPortalScreen({super.key});
@@ -20,7 +19,7 @@ class PublicPortalScreen extends StatelessWidget {
               width: 400,
               height: 400,
               decoration: BoxDecoration(
-                color: const Color(0xFF06B6D4).withOpacity(0.05),
+                color: const Color(0xFF06B6D4).withValues(alpha: 0.05),
                 shape: BoxShape.circle,
               ),
             ),
@@ -55,7 +54,7 @@ class PublicPortalScreen extends StatelessWidget {
 
   Widget _buildAppBar(BuildContext context) {
     return SliverAppBar(
-      backgroundColor: const Color(0xFF0D0D1A).withOpacity(0.8),
+      backgroundColor: const Color(0xFF0D0D1A).withValues(alpha: 0.8),
       floating: true,
       pinned: true,
       elevation: 0,
@@ -120,7 +119,7 @@ class PublicPortalScreen extends StatelessWidget {
         decoration: BoxDecoration(
           color: const Color(0xFF0D0D1A),
           borderRadius: BorderRadius.circular(16),
-          border: Border.all(color: color.withOpacity(0.2)),
+          border: Border.all(color: color.withValues(alpha: 0.2)),
         ),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
@@ -129,7 +128,7 @@ class PublicPortalScreen extends StatelessWidget {
             const SizedBox(height: 8),
             Text(value, style: GoogleFonts.spaceGrotesk(color: color, fontSize: 24, fontWeight: FontWeight.bold)),
             const SizedBox(height: 4),
-            Text(sub, style: TextStyle(color: Colors.white38, fontSize: 11)),
+            Text(sub, style: const TextStyle(color: Colors.white38, fontSize: 11)),
           ],
         ),
       ),
@@ -143,7 +142,7 @@ class PublicPortalScreen extends StatelessWidget {
       decoration: BoxDecoration(
         color: const Color(0xFF0D0D1A),
         borderRadius: BorderRadius.circular(20),
-        border: Border.all(color: Colors.white.withOpacity(0.05)),
+        border: Border.all(color: Colors.white.withValues(alpha: 0.05)),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -178,7 +177,7 @@ class PublicPortalScreen extends StatelessWidget {
           Container(
             padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
             decoration: BoxDecoration(
-              color: (pass ? const Color(0xFF10B981) : Colors.red).withOpacity(0.1),
+              color: (pass ? const Color(0xFF10B981) : Colors.red).withValues(alpha: 0.1),
               borderRadius: BorderRadius.circular(6),
             ),
             child: Text(status, style: TextStyle(
@@ -198,11 +197,11 @@ class PublicPortalScreen extends StatelessWidget {
       padding: const EdgeInsets.all(32),
       decoration: BoxDecoration(
         gradient: LinearGradient(
-          colors: [const Color(0xFF10B981).withOpacity(0.1), Colors.transparent],
+          colors: [const Color(0xFF10B981).withValues(alpha: 0.1), Colors.transparent],
           begin: Alignment.topLeft, end: Alignment.bottomRight,
         ),
         borderRadius: BorderRadius.circular(20),
-        border: Border.all(color: const Color(0xFF10B981).withOpacity(0.3)),
+        border: Border.all(color: const Color(0xFF10B981).withValues(alpha: 0.3)),
       ),
       child: Row(
         children: [
@@ -216,7 +215,7 @@ class PublicPortalScreen extends StatelessWidget {
                   color: Colors.white, fontSize: 20, fontWeight: FontWeight.bold,
                 )),
                 const SizedBox(height: 8),
-                Text(
+                const Text(
                   'This system has been independently verified to meet the highest standards of algorithmic fairness.',
                   style: TextStyle(color: Colors.white60, fontSize: 14, height: 1.4),
                 ),

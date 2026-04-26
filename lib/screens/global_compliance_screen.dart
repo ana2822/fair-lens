@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'dart:ui';
-import 'dart:math' as math;
 
 class GlobalComplianceScreen extends StatelessWidget {
   const GlobalComplianceScreen({super.key});
@@ -50,14 +49,14 @@ class GlobalComplianceScreen extends StatelessWidget {
           top: -100, right: -100,
           child: Container(
             width: 400, height: 400,
-            decoration: BoxDecoration(shape: BoxShape.circle, color: const Color(0xFF6366F1).withOpacity(0.05), border: Border.all(color: const Color(0xFF6366F1).withOpacity(0.1))),
+            decoration: BoxDecoration(shape: BoxShape.circle, color: const Color(0xFF6366F1).withValues(alpha: 0.05), border: Border.all(color: const Color(0xFF6366F1).withValues(alpha: 0.1))),
           ).animate(onPlay: (c) => c.repeat()).rotate(duration: 20.seconds),
         ),
         Positioned(
           bottom: -150, left: -50,
           child: Container(
             width: 300, height: 300,
-            decoration: BoxDecoration(shape: BoxShape.circle, color: const Color(0xFF8B5CF6).withOpacity(0.05), border: Border.all(color: const Color(0xFF8B5CF6).withOpacity(0.1))),
+            decoration: BoxDecoration(shape: BoxShape.circle, color: const Color(0xFF8B5CF6).withValues(alpha: 0.05), border: Border.all(color: const Color(0xFF8B5CF6).withValues(alpha: 0.1))),
           ).animate(onPlay: (c) => c.repeat()).rotate(duration: 15.seconds),
         ),
       ],
@@ -78,7 +77,7 @@ class GlobalComplianceScreen extends StatelessWidget {
         Container(
           margin: const EdgeInsets.symmetric(vertical: 10, horizontal: 16),
           padding: const EdgeInsets.symmetric(horizontal: 12),
-          decoration: BoxDecoration(color: Colors.white.withOpacity(0.05), borderRadius: BorderRadius.circular(20), border: Border.all(color: Colors.white.withOpacity(0.1))),
+          decoration: BoxDecoration(color: Colors.white.withValues(alpha: 0.05), borderRadius: BorderRadius.circular(20), border: Border.all(color: Colors.white.withValues(alpha: 0.1))),
           child: Row(children: [
             const Icon(Icons.verified_user_rounded, color: Color(0xFF10B981), size: 14),
             const SizedBox(width: 6),
@@ -108,9 +107,9 @@ class GlobalComplianceScreen extends StatelessWidget {
       height: 440,
       width: double.infinity,
       decoration: BoxDecoration(
-        color: Colors.white.withOpacity(0.02),
+        color: Colors.white.withValues(alpha: 0.02),
         borderRadius: BorderRadius.circular(32),
-        border: Border.all(color: Colors.white.withOpacity(0.08)),
+        border: Border.all(color: Colors.white.withValues(alpha: 0.08)),
       ),
       child: ClipRRect(
         borderRadius: BorderRadius.circular(32),
@@ -118,7 +117,7 @@ class GlobalComplianceScreen extends StatelessWidget {
           children: [
             // Abstract Map Grid
             CustomPaint(painter: _GridPainter(), size: Size.infinite),
-            Center(child: Icon(Icons.public_rounded, size: 400, color: Colors.white.withOpacity(0.02))),
+            Center(child: Icon(Icons.public_rounded, size: 400, color: Colors.white.withValues(alpha: 0.02))),
             
             // Interaction Markers
             _marker(120, 100, 'USA', 'CAID Law', const Color(0xFFF59E0B)),
@@ -145,8 +144,8 @@ class GlobalComplianceScreen extends StatelessWidget {
         children: [
           Container(
             padding: const EdgeInsets.all(6),
-            decoration: BoxDecoration(color: color.withOpacity(0.2), shape: BoxShape.circle),
-            child: Container(width: 12, height: 12, decoration: BoxDecoration(color: color, shape: BoxShape.circle, boxShadow: [BoxShadow(color: color.withOpacity(0.5), blurRadius: 10)])),
+            decoration: BoxDecoration(color: color.withValues(alpha: 0.2), shape: BoxShape.circle),
+            child: Container(width: 12, height: 12, decoration: BoxDecoration(color: color, shape: BoxShape.circle, boxShadow: [BoxShadow(color: color.withValues(alpha: 0.5), blurRadius: 10)])),
           ).animate(onPlay: (c) => c.repeat(reverse: true)).scale(duration: 1.seconds, begin: const Offset(0.8, 0.8), end: const Offset(1.2, 1.2)),
           const SizedBox(height: 8),
           ClipRRect(
@@ -156,9 +155,9 @@ class GlobalComplianceScreen extends StatelessWidget {
               child: Container(
                 padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
                 decoration: BoxDecoration(
-                  color: Colors.black.withOpacity(0.8),
+                  color: Colors.black.withValues(alpha: 0.8),
                   borderRadius: BorderRadius.circular(12),
-                  border: Border.all(color: color.withOpacity(0.4)),
+                  border: Border.all(color: color.withValues(alpha: 0.4)),
                 ),
                 child: Column(children: [
                   Text(name, style: GoogleFonts.spaceGrotesk(color: Colors.white, fontSize: 10, fontWeight: FontWeight.bold)),
@@ -180,9 +179,9 @@ class GlobalComplianceScreen extends StatelessWidget {
         child: Container(
           padding: const EdgeInsets.all(16),
           decoration: BoxDecoration(
-            color: Colors.black.withOpacity(0.5),
+            color: Colors.black.withValues(alpha: 0.5),
             borderRadius: BorderRadius.circular(16),
-            border: Border.all(color: Colors.white.withOpacity(0.1)),
+            border: Border.all(color: Colors.white.withValues(alpha: 0.1)),
           ),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
@@ -228,9 +227,9 @@ class GlobalComplianceScreen extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.all(24),
       decoration: BoxDecoration(
-        color: Colors.white.withOpacity(0.03),
+        color: Colors.white.withValues(alpha: 0.03),
         borderRadius: BorderRadius.circular(24),
-        border: Border.all(color: color.withOpacity(0.2)),
+        border: Border.all(color: color.withValues(alpha: 0.2)),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -238,12 +237,12 @@ class GlobalComplianceScreen extends StatelessWidget {
           Row(mainAxisAlignment: MainAxisAlignment.spaceBetween, children: [
             Container(
               padding: const EdgeInsets.all(10),
-              decoration: BoxDecoration(color: color.withOpacity(0.1), borderRadius: BorderRadius.circular(12)),
+              decoration: BoxDecoration(color: color.withValues(alpha: 0.1), borderRadius: BorderRadius.circular(12)),
               child: Icon(icon, color: color, size: 20),
             ),
             Container(
               padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-              decoration: BoxDecoration(color: color.withOpacity(0.1), borderRadius: BorderRadius.circular(20), border: Border.all(color: color.withOpacity(0.3))),
+              decoration: BoxDecoration(color: color.withValues(alpha: 0.1), borderRadius: BorderRadius.circular(20), border: Border.all(color: color.withValues(alpha: 0.3))),
               child: Text(color == const Color(0xFF10B981) ? 'SAFE' : (color == const Color(0xFFEF4444) ? 'RISK' : 'REGULATED'), style: GoogleFonts.spaceGrotesk(color: color, fontSize: 8, fontWeight: FontWeight.bold)),
             ),
           ]),
@@ -262,7 +261,7 @@ class _GridPainter extends CustomPainter {
   @override
   void paint(Canvas canvas, Size size) {
     final paint = Paint()
-      ..color = Colors.white.withOpacity(0.03)
+      ..color = Colors.white.withValues(alpha: 0.03)
       ..strokeWidth = 1.0;
     const spacing = 40.0;
     for (double x = 0; x < size.width; x += spacing) {

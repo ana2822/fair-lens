@@ -19,7 +19,6 @@ class _TextBiasScreenState extends State<TextBiasScreen> {
   double _inclusion = 0.45;
   int _flaggedCount = 0;
   bool _redTeamMode = false;
-  String _redTeamPrompt = "";
   String _llmResponse = "";
   bool _isRedTeaming = false;
 
@@ -100,7 +99,6 @@ class _TextBiasScreenState extends State<TextBiasScreen> {
     
     setState(() {
       _isRedTeaming = true;
-      _redTeamPrompt = 'Write a short recruitment email using these requirements: $biasedText';
       _llmResponse = '';
     });
 
@@ -152,13 +150,13 @@ class _TextBiasScreenState extends State<TextBiasScreen> {
       padding: const EdgeInsets.all(24),
       decoration: BoxDecoration(
         gradient: LinearGradient(
-          colors: [const Color(0xFF1E1B4B).withOpacity(0.5), const Color(0xFF0D0D1A)],
+          colors: [const Color(0xFF1E1B4B).withValues(alpha: 0.5), const Color(0xFF0D0D1A)],
           begin: Alignment.topLeft, end: Alignment.bottomRight,
         ),
         borderRadius: BorderRadius.circular(20),
-        border: Border.all(color: const Color(0xFF8B5CF6).withOpacity(0.3)),
+        border: Border.all(color: const Color(0xFF8B5CF6).withValues(alpha: 0.3)),
         boxShadow: [
-          BoxShadow(color: const Color(0xFF8B5CF6).withOpacity(0.05), blurRadius: 20, spreadRadius: 5)
+          BoxShadow(color: const Color(0xFF8B5CF6).withValues(alpha: 0.05), blurRadius: 20, spreadRadius: 5)
         ],
       ),
       child: Column(
@@ -168,7 +166,7 @@ class _TextBiasScreenState extends State<TextBiasScreen> {
             children: [
               Container(
                 padding: const EdgeInsets.all(8),
-                decoration: BoxDecoration(color: const Color(0xFF8B5CF6).withOpacity(0.2), borderRadius: BorderRadius.circular(8)),
+                decoration: BoxDecoration(color: const Color(0xFF8B5CF6).withValues(alpha: 0.2), borderRadius: BorderRadius.circular(8)),
                 child: const Icon(Icons.psychology_rounded, color: Color(0xFFC084FC), size: 20),
               ),
               const SizedBox(width: 12),
@@ -224,9 +222,9 @@ class _TextBiasScreenState extends State<TextBiasScreen> {
       child: Container(
         padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
         decoration: BoxDecoration(
-          color: _redTeamMode ? const Color(0xFFEF4444).withOpacity(0.1) : Colors.white.withOpacity(0.05),
+          color: _redTeamMode ? const Color(0xFFEF4444).withValues(alpha: 0.1) : Colors.white.withValues(alpha: 0.05),
           borderRadius: BorderRadius.circular(6),
-          border: Border.all(color: _redTeamMode ? const Color(0xFFEF4444).withOpacity(0.3) : Colors.white12),
+          border: Border.all(color: _redTeamMode ? const Color(0xFFEF4444).withValues(alpha: 0.3) : Colors.white12),
         ),
         child: Row(
           children: [
@@ -242,7 +240,7 @@ class _TextBiasScreenState extends State<TextBiasScreen> {
   Widget _privacyToggle() {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-      decoration: BoxDecoration(color: Colors.white.withOpacity(0.03), borderRadius: BorderRadius.circular(12)),
+      decoration: BoxDecoration(color: Colors.white.withValues(alpha: 0.03), borderRadius: BorderRadius.circular(12)),
       child: Row(
         children: [
           const Icon(Icons.shield_rounded, color: Color(0xFF10B981), size: 18),
@@ -251,13 +249,13 @@ class _TextBiasScreenState extends State<TextBiasScreen> {
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Text('Anonymization Layer', style: GoogleFonts.spaceGrotesk(color: Colors.white, fontSize: 14, fontWeight: FontWeight.w600)),
-              Text('Scrub names, emails, and sensitive IDs', style: TextStyle(color: Colors.white38, fontSize: 11)),
+              const Text('Scrub names, emails, and sensitive IDs', style: TextStyle(color: Colors.white38, fontSize: 11)),
             ],
           ),
           const Spacer(),
           Switch(
             value: _piiScrubbingEnabled,
-            activeColor: const Color(0xFF10B981),
+            activeThumbColor: const Color(0xFF10B981),
             onChanged: (val) {
               setState(() {
                 _piiScrubbingEnabled = val;
@@ -302,7 +300,7 @@ class _TextBiasScreenState extends State<TextBiasScreen> {
         if (_detectedFlags.isEmpty)
           _emptyResults()
         else
-          ..._detectedFlags.map((flag) => _buildFlagCard(flag)).toList(),
+          ..._detectedFlags.map((flag) => _buildFlagCard(flag)),
         
         if (_redTeamMode && (_isRedTeaming || _llmResponse.isNotEmpty)) ...[
           const SizedBox(height: 32),
@@ -319,9 +317,9 @@ class _TextBiasScreenState extends State<TextBiasScreen> {
     return Container(
       padding: const EdgeInsets.all(24),
       decoration: BoxDecoration(
-        color: const Color(0xFFEF4444).withOpacity(0.05),
+        color: const Color(0xFFEF4444).withValues(alpha: 0.05),
         borderRadius: BorderRadius.circular(20),
-        border: Border.all(color: const Color(0xFFEF4444).withOpacity(0.2)),
+        border: Border.all(color: const Color(0xFFEF4444).withValues(alpha: 0.2)),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -336,7 +334,7 @@ class _TextBiasScreenState extends State<TextBiasScreen> {
             ],
           ),
           const SizedBox(height: 16),
-          Text('Prompting an LLM with your biased requirements resulted in this exclusionary output:', style: const TextStyle(color: Colors.white54, fontSize: 12)),
+          const Text('Prompting an LLM with your biased requirements resulted in this exclusionary output:', style: TextStyle(color: Colors.white54, fontSize: 12)),
           const SizedBox(height: 16),
           Container(
             width: double.infinity,
@@ -347,7 +345,7 @@ class _TextBiasScreenState extends State<TextBiasScreen> {
           const SizedBox(height: 16),
           _glassContainer(
             padding: const EdgeInsets.all(12),
-            color: const Color(0xFFEF4444).withOpacity(0.1),
+            color: const Color(0xFFEF4444).withValues(alpha: 0.1),
             child: const Text(
               'RISK: The LLM amplified the biased "ninja" and "rockstar" keywords, creating a statistically significant gender and age barrier for applicants.',
               style: TextStyle(color: Color(0xFFEF4444), fontSize: 11, fontWeight: FontWeight.w600),
@@ -362,9 +360,9 @@ class _TextBiasScreenState extends State<TextBiasScreen> {
     return Container(
       padding: padding,
       decoration: BoxDecoration(
-        color: color ?? Colors.white.withOpacity(0.03),
+        color: color ?? Colors.white.withValues(alpha: 0.03),
         borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: borderColor ?? Colors.white.withOpacity(0.08)),
+        border: Border.all(color: borderColor ?? Colors.white.withValues(alpha: 0.08)),
       ),
       child: child,
     );
@@ -374,9 +372,9 @@ class _TextBiasScreenState extends State<TextBiasScreen> {
     return Container(
       padding: const EdgeInsets.all(24),
       decoration: BoxDecoration(
-        color: const Color(0xFFEF4444).withOpacity(0.03),
+        color: const Color(0xFFEF4444).withValues(alpha: 0.03),
         borderRadius: BorderRadius.circular(20),
-        border: Border.all(color: const Color(0xFFEF4444).withOpacity(0.15)),
+        border: Border.all(color: const Color(0xFFEF4444).withValues(alpha: 0.15)),
       ),
       child: Row(
         children: [
@@ -421,7 +419,7 @@ class _TextBiasScreenState extends State<TextBiasScreen> {
       decoration: BoxDecoration(
         color: const Color(0xFF0D0D1A),
         borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: Colors.white.withOpacity(0.05)),
+        border: Border.all(color: Colors.white.withValues(alpha: 0.05)),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -430,7 +428,7 @@ class _TextBiasScreenState extends State<TextBiasScreen> {
             children: [
               Container(
                 padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                decoration: BoxDecoration(color: Colors.orange.withOpacity(0.1), borderRadius: BorderRadius.circular(6)),
+                decoration: BoxDecoration(color: Colors.orange.withValues(alpha: 0.1), borderRadius: BorderRadius.circular(6)),
                 child: Text(flag['category']!.toUpperCase(), style: const TextStyle(color: Colors.orangeAccent, fontSize: 10, fontWeight: FontWeight.bold)),
               ),
               const Spacer(),
@@ -444,7 +442,7 @@ class _TextBiasScreenState extends State<TextBiasScreen> {
           const SizedBox(height: 16),
           Container(
             padding: const EdgeInsets.all(12),
-            decoration: BoxDecoration(color: const Color(0xFF10B981).withOpacity(0.05), borderRadius: BorderRadius.circular(8)),
+            decoration: BoxDecoration(color: const Color(0xFF10B981).withValues(alpha: 0.05), borderRadius: BorderRadius.circular(8)),
             child: Row(
               children: [
                 const Icon(Icons.auto_awesome_rounded, color: Color(0xFF10B981), size: 14),
@@ -463,9 +461,9 @@ class _TextBiasScreenState extends State<TextBiasScreen> {
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: color.withOpacity(0.03),
+        color: color.withValues(alpha: 0.03),
         borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: color.withOpacity(0.15)),
+        border: Border.all(color: color.withValues(alpha: 0.15)),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -482,9 +480,9 @@ class _TextBiasScreenState extends State<TextBiasScreen> {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
       decoration: BoxDecoration(
-        color: color.withOpacity(0.1),
+        color: color.withValues(alpha: 0.1),
         borderRadius: BorderRadius.circular(6),
-        border: Border.all(color: color.withOpacity(0.3)),
+        border: Border.all(color: color.withValues(alpha: 0.3)),
       ),
       child: Text(text, style: GoogleFonts.jetBrainsMono(color: color, fontSize: 10, fontWeight: FontWeight.bold)),
     );

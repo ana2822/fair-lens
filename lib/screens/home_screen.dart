@@ -8,8 +8,6 @@ import 'dart:math' as math;
 import 'dart:ui';
 import '../models/bias_detector.dart';
 import 'analysis_screen.dart';
-import 'history_screen.dart';
-import 'compare_screen.dart';
 import 'face_bias_screen.dart';
 import 'gov_dashboard_screen.dart';
 import 'text_bias_screen.dart';
@@ -89,17 +87,17 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
         eol: '\n',
       ).convert(cleanedCsv);
 
-      print("RAW CSV:");
-      print(cleanedCsv);
+      debugPrint("RAW CSV:");
+      debugPrint(cleanedCsv);
 
-      print("ROWS LENGTH: ${rows.length}");
-      print("FIRST ROW: ${rows.isNotEmpty ? rows[0] : 'EMPTY'}");
+      debugPrint("ROWS LENGTH: ${rows.length}");
+      debugPrint("FIRST ROW: ${rows.isNotEmpty ? rows[0] : 'EMPTY'}");
 
       // 🔥 REMOVE EMPTY ROWS
       final validRows = rows.where((r) => r.isNotEmpty).toList();
 
       // 🔥 DEBUG (optional)
-      print("Parsed valid rows: ${validRows.length}");
+      debugPrint("Parsed valid rows: ${validRows.length}");
 
       if (validRows.length < 2) {
         throw Exception('CSV needs at least 2 valid rows');
@@ -122,8 +120,8 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
         if (analysisResult.overallBiasScore > 50) {
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
-              content: Row(
-                children: const [
+              content: const Row(
+                children: [
                   Icon(Icons.warning_amber_rounded, color: Colors.white),
                   SizedBox(width: 12),
                   Expanded(
@@ -901,11 +899,11 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
         decoration: BoxDecoration(
           color: const Color(0xFF0D0D1A),
           borderRadius: BorderRadius.circular(16),
-          border: Border.all(color: color.withOpacity(0.25)),
+          border: Border.all(color: color.withValues(alpha: 0.25)),
           gradient: LinearGradient(
             begin: Alignment.topLeft,
             end: Alignment.bottomRight,
-            colors: [color.withOpacity(0.08), const Color(0xFF0D0D1A)],
+            colors: [color.withValues(alpha: 0.08), const Color(0xFF0D0D1A)],
           ),
         ),
         child: Column(
@@ -915,18 +913,18 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
               Container(
                 width: 44, height: 44,
                 decoration: BoxDecoration(
-                  color: color.withOpacity(0.2),
+                  color: color.withValues(alpha: 0.2),
                   borderRadius: BorderRadius.circular(12),
-                  border: Border.all(color: color.withOpacity(0.3)),
+                  border: Border.all(color: color.withValues(alpha: 0.3)),
                 ),
                 child: Icon(icon, color: color, size: 22),
               ),
               Container(
                 padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                 decoration: BoxDecoration(
-                  color: color.withOpacity(0.12),
+                  color: color.withValues(alpha: 0.12),
                   borderRadius: BorderRadius.circular(6),
-                  border: Border.all(color: color.withOpacity(0.2)),
+                  border: Border.all(color: color.withValues(alpha: 0.2)),
                 ),
                 child: Text('ACTIVE', style: TextStyle(
                   color: color, fontSize: 8, fontWeight: FontWeight.w800, letterSpacing: 0.8)),
@@ -1697,6 +1695,7 @@ class _FeatureCardState extends State<_FeatureCard> {
         duration: const Duration(milliseconds: 220),
         transform: Matrix4.identity()
           ..setEntry(3, 2, 0.001)
+          // ignore: deprecated_member_use
           ..translate(0.0, _hover ? -8.0 : 0.0, _hover ? 10.0 : 0.0),
         decoration: BoxDecoration(
           color: _hover
@@ -1864,6 +1863,7 @@ class _StepCardState extends State<_StepCard> {
         margin: const EdgeInsets.only(right: 4),
         padding: const EdgeInsets.all(20),
         transform: Matrix4.identity()
+          // ignore: deprecated_member_use
           ..translate(0.0, _hover ? -5.0 : 0.0),
         decoration: BoxDecoration(
           color: _hover
@@ -1943,7 +1943,9 @@ class _SampleCardState extends State<_SampleCard> {
       onExit: (_) => setState(() => _hover = false),
       child: AnimatedContainer(
         duration: const Duration(milliseconds: 200),
-        transform: Matrix4.identity()..translate(0.0, _hover ? -6.0 : 0.0),
+        transform: Matrix4.identity()
+          // ignore: deprecated_member_use
+          ..translate(0.0, _hover ? -6.0 : 0.0),
         padding: const EdgeInsets.all(16),
         decoration: BoxDecoration(
           color: _hover

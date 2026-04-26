@@ -137,7 +137,7 @@ class _SimulatorScreenState extends State<SimulatorScreen> {
       decoration: BoxDecoration(
         color: const Color(0xFF0D0D1A),
         borderRadius: BorderRadius.circular(20),
-        border: Border.all(color: const Color(0xFF8B5CF6).withOpacity(0.2)),
+        border: Border.all(color: const Color(0xFF8B5CF6).withValues(alpha: 0.2)),
       ),
       child: Column(
         children: [
@@ -148,7 +148,7 @@ class _SimulatorScreenState extends State<SimulatorScreen> {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text('Optimization Strategy', style: GoogleFonts.spaceGrotesk(color: Colors.white, fontSize: 18, fontWeight: FontWeight.bold)),
-                  Text('Balance predictive power vs group parity', style: TextStyle(color: Colors.white38, fontSize: 13)),
+                  const Text('Balance predictive power vs group parity', style: TextStyle(color: Colors.white38, fontSize: 13)),
                 ],
               ),
               ElevatedButton.icon(
@@ -175,8 +175,8 @@ class _SimulatorScreenState extends State<SimulatorScreen> {
           ),
           const SizedBox(height: 32),
           SliderTheme(
-            data: SliderThemeData(
-              activeTrackColor: const Color(0xFF8B5CF6),
+            data: const SliderThemeData(
+              activeTrackColor: Color(0xFF8B5CF6),
               inactiveTrackColor: Colors.white12,
               thumbColor: Colors.white,
               trackHeight: 6,
@@ -261,7 +261,7 @@ class _SimulatorScreenState extends State<SimulatorScreen> {
     return Container(
       height: 300,
       padding: const EdgeInsets.all(20),
-      decoration: BoxDecoration(color: const Color(0xFF0D0D1A), borderRadius: BorderRadius.circular(20), border: Border.all(color: Colors.white.withOpacity(0.05))),
+      decoration: BoxDecoration(color: const Color(0xFF0D0D1A), borderRadius: BorderRadius.circular(20), border: Border.all(color: Colors.white.withValues(alpha: 0.05))),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -298,9 +298,9 @@ class _SimulatorScreenState extends State<SimulatorScreen> {
     return Container(
       padding: const EdgeInsets.all(24),
       decoration: BoxDecoration(
-        color: isBlocked ? const Color(0xFFEF4444).withOpacity(0.05) : const Color(0xFF10B981).withOpacity(0.05),
+        color: isBlocked ? const Color(0xFFEF4444).withValues(alpha: 0.05) : const Color(0xFF10B981).withValues(alpha: 0.05),
         borderRadius: BorderRadius.circular(20),
-        border: Border.all(color: isBlocked ? const Color(0xFFEF4444).withOpacity(0.3) : const Color(0xFF10B981).withOpacity(0.3)),
+        border: Border.all(color: isBlocked ? const Color(0xFFEF4444).withValues(alpha: 0.3) : const Color(0xFF10B981).withValues(alpha: 0.3)),
       ),
       child: Row(
         children: [
@@ -316,7 +316,7 @@ class _SimulatorScreenState extends State<SimulatorScreen> {
                 )),
                 Text(
                   isBlocked ? 'Bias score exceeds institutional risk threshold of 40%.' : 'Model meets all fairness and compliance requirements.',
-                  style: TextStyle(color: Colors.white54, fontSize: 13),
+                  style: const TextStyle(color: Colors.white54, fontSize: 13),
                 ),
               ],
             ),
@@ -360,7 +360,7 @@ class _SimulatorScreenState extends State<SimulatorScreen> {
   Widget _statusBadge(String text, Color color) {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-      decoration: BoxDecoration(color: color.withOpacity(0.1), borderRadius: BorderRadius.circular(20), border: Border.all(color: color.withOpacity(0.3))),
+      decoration: BoxDecoration(color: color.withValues(alpha: 0.1), borderRadius: BorderRadius.circular(20), border: Border.all(color: color.withValues(alpha: 0.3))),
       child: Text(text, style: GoogleFonts.jetBrainsMono(color: color, fontSize: 10, fontWeight: FontWeight.bold)),
     );
   }

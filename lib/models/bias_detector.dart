@@ -1,5 +1,6 @@
 /// FairLens - Complete Bias Detection Engine
 /// Supports: AnalysisReport, BiasSeverity, AutoFixResult, static methods
+library;
 
 enum BiasSeverity { low, medium, high, critical }
 
@@ -402,16 +403,24 @@ class BiasDetector {
     final joined = columns.join(' ').toLowerCase();
     if (joined.contains('salary') ||
         joined.contains('hire') ||
-        joined.contains('interview')) return DatasetType.hiring;
+        joined.contains('interview')) {
+      return DatasetType.hiring;
+    }
     if (joined.contains('loan') ||
         joined.contains('credit') ||
-        joined.contains('bank')) return DatasetType.loan;
+        joined.contains('bank')) {
+      return DatasetType.loan;
+    }
     if (joined.contains('diagnosis') ||
         joined.contains('patient') ||
-        joined.contains('medical')) return DatasetType.medical;
+        joined.contains('medical')) {
+      return DatasetType.medical;
+    }
     if (joined.contains('grade') ||
         joined.contains('student') ||
-        joined.contains('school')) return DatasetType.education;
+        joined.contains('school')) {
+      return DatasetType.education;
+    }
     return DatasetType.general;
   }
 
@@ -522,24 +531,31 @@ class BiasDetector {
     if (lower.contains('zip') ||
         lower.contains('region') ||
         lower.contains('state') ||
-        lower.contains('location')) return 'Geographic Bias';
-    if (lower.contains('education') || lower.contains('school'))
+        lower.contains('location')) {
+      return 'Geographic Bias';
+    }
+    if (lower.contains('education') || lower.contains('school')) {
       return 'Education Bias';
+    }
     return 'Demographic Bias';
   }
 
   String _getLawViolated(String column, BiasSeverity severity) {
     if (severity == BiasSeverity.low) return 'No violation detected';
     final lower = column.toLowerCase();
-    if (lower.contains('gender') || lower.contains('sex'))
+    if (lower.contains('gender') || lower.contains('sex')) {
       return 'Equal Remuneration Act 1976 / GDPR Art.9';
+    }
     if (lower.contains('age')) return 'Age Discrimination Act / GDPR Art.9';
-    if (lower.contains('caste') || lower.contains('community'))
+    if (lower.contains('caste') || lower.contains('community')) {
       return 'SC/ST Prevention of Atrocities Act / Art.15 Constitution';
-    if (lower.contains('religion'))
+    }
+    if (lower.contains('religion')) {
       return 'Article 14-16 Indian Constitution / GDPR Art.9';
-    if (lower.contains('race') || lower.contains('ethnic'))
+    }
+    if (lower.contains('race') || lower.contains('ethnic')) {
       return 'ICERD / GDPR Article 9';
+    }
     return 'Article 14 Indian Constitution / EU AI Act';
   }
 

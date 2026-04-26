@@ -470,7 +470,7 @@ FAIRNESS SCORE INTERPRETATION:
       final pctHigh = (highest.value * 100).toStringAsFixed(1);
       final gap     = ((highest.value - lowest.value) * 100).toStringAsFixed(1);
       final ratio   = highest.value > 0 ? (lowest.value / highest.value) : 1.0;
-      groupInsight  = '"${lowest.key}" group: $pctLow% vs "${highest.key}" group: $pctHigh% — a ${gap}% gap.';
+      groupInsight  = '"${lowest.key}" group: $pctLow% vs "${highest.key}" group: $pctHigh% — a $gap% gap.';
       rateDetail    = ratio < 0.8
           ? 'Disparate Impact Ratio: ${ratio.toStringAsFixed(2)} (fails the 80% four-fifths rule — legally actionable).'
           : 'Disparate Impact Ratio: ${ratio.toStringAsFixed(2)} (borderline — close monitoring required).';

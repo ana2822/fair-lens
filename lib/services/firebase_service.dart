@@ -1,6 +1,7 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import '../models/bias_detector.dart';
+import 'package:flutter/foundation.dart';
 
 class FirebaseService {
   final _db = FirebaseFirestore.instance;
@@ -17,7 +18,7 @@ class FirebaseService {
       });
     } catch (e) {
       // ignore: avoid_print
-      print('Firebase save error: $e');
+      debugPrint('Firebase save error: $e');
     }
   }
 
@@ -32,7 +33,7 @@ class FirebaseService {
           .get();
       return snapshot.docs.map((d) => {'id': d.id, ...d.data()}).toList();
     } catch (e) {
-      print('Firebase fetch error: $e');
+      debugPrint('Firebase fetch error: $e');
       return [];
     }
   }

@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import 'package:google_fonts/google_fonts.dart';
-import 'dart:ui';
 import 'dart:async';
 import 'dart:math' as math;
 import '../models/bias_detector.dart';
@@ -24,12 +23,12 @@ class _GovDashboardScreenState extends State<GovDashboardScreen> with TickerProv
   int _liveScore = 72;
   int _batchCount = 4901;
   int _alertCount = 0;
-  bool _isOnline = true;
+  final bool _isOnline = true;
   final List<Map<String, dynamic>> _liveLogs = [];
   
   // Agentic Auditor State
-  String _currentGoal = "Minimize Disparate Impact in rural areas";
-  double _goalProgress = 0.65;
+  final String _currentGoal = "Minimize Disparate Impact in rural areas";
+  final double _goalProgress = 0.65;
 
   static const _events = [
     {'type': 'batch',    'msg': 'New applicant batch processed.'},
@@ -178,9 +177,9 @@ class _GovDashboardScreenState extends State<GovDashboardScreen> with TickerProv
             margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
             padding: const EdgeInsets.symmetric(horizontal: 12),
             decoration: BoxDecoration(
-              color: const Color(0xFF10B981).withOpacity(0.15),
+              color: const Color(0xFF10B981).withValues(alpha: 0.15),
               borderRadius: BorderRadius.circular(20),
-              border: Border.all(color: const Color(0xFF10B981).withOpacity(0.3)),
+              border: Border.all(color: const Color(0xFF10B981).withValues(alpha: 0.3)),
             ),
             child: Row(
               children: [
@@ -189,11 +188,11 @@ class _GovDashboardScreenState extends State<GovDashboardScreen> with TickerProv
                   builder: (_, __) => Container(
                     width: 8, height: 8,
                     decoration: BoxDecoration(
-                      color: const Color(0xFF10B981).withOpacity(0.5 + 0.5 * _pulseController.value),
+                      color: const Color(0xFF10B981).withValues(alpha: 0.5 + 0.5 * _pulseController.value),
                       shape: BoxShape.circle,
                       boxShadow: [
                         BoxShadow(
-                          color: const Color(0xFF10B981).withOpacity(0.5 * _pulseController.value),
+                          color: const Color(0xFF10B981).withValues(alpha: 0.5 * _pulseController.value),
                           blurRadius: 6,
                         )
                       ]
@@ -290,9 +289,9 @@ class _GovDashboardScreenState extends State<GovDashboardScreen> with TickerProv
         padding: const EdgeInsets.symmetric(horizontal: 10),
         alignment: Alignment.center,
         decoration: BoxDecoration(
-          color: Colors.white.withOpacity(0.05),
+          color: Colors.white.withValues(alpha: 0.05),
           borderRadius: BorderRadius.circular(8),
-          border: Border.all(color: Colors.white.withOpacity(0.1)),
+          border: Border.all(color: Colors.white.withValues(alpha: 0.1)),
         ),
         child: Text(text, style: const TextStyle(color: Colors.white54, fontSize: 12)),
       ),
@@ -315,7 +314,7 @@ class _GovDashboardScreenState extends State<GovDashboardScreen> with TickerProv
             animation: _pulseController,
             builder: (_, __) => Icon(
               Icons.warning_amber_rounded,
-              color: Colors.white.withOpacity(0.6 + 0.4 * _pulseController.value),
+              color: Colors.white.withValues(alpha: 0.6 + 0.4 * _pulseController.value),
             ),
           ),
           const SizedBox(width: 12),
@@ -345,10 +344,10 @@ class _GovDashboardScreenState extends State<GovDashboardScreen> with TickerProv
       decoration: BoxDecoration(
         color: const Color(0xFF0D0D1A),
         borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: Colors.white.withOpacity(0.08)),
+        border: Border.all(color: Colors.white.withValues(alpha: 0.08)),
         boxShadow: [
           BoxShadow(
-            color: const Color(0xFF6366F1).withOpacity(0.05),
+            color: const Color(0xFF6366F1).withValues(alpha: 0.05),
             blurRadius: 20,
             offset: const Offset(0, 10),
           )
@@ -421,9 +420,9 @@ class _GovDashboardScreenState extends State<GovDashboardScreen> with TickerProv
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
       decoration: BoxDecoration(
-        color: (_isOnline ? const Color(0xFF10B981) : const Color(0xFFF59E0B)).withOpacity(0.1),
+        color: (_isOnline ? const Color(0xFF10B981) : const Color(0xFFF59E0B)).withValues(alpha: 0.1),
         borderRadius: BorderRadius.circular(4),
-        border: Border.all(color: (_isOnline ? const Color(0xFF10B981) : const Color(0xFFF59E0B)).withOpacity(0.3)),
+        border: Border.all(color: (_isOnline ? const Color(0xFF10B981) : const Color(0xFFF59E0B)).withValues(alpha: 0.3)),
       ),
       child: Row(
         mainAxisSize: MainAxisSize.min,
@@ -452,9 +451,9 @@ class _GovDashboardScreenState extends State<GovDashboardScreen> with TickerProv
       child: Container(
         padding: const EdgeInsets.all(16),
         decoration: BoxDecoration(
-          color: color.withOpacity(0.05),
+          color: color.withValues(alpha: 0.05),
           borderRadius: BorderRadius.circular(12),
-          border: Border.all(color: color.withOpacity(0.2)),
+          border: Border.all(color: color.withValues(alpha: 0.2)),
         ),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
@@ -463,7 +462,7 @@ class _GovDashboardScreenState extends State<GovDashboardScreen> with TickerProv
             const SizedBox(height: 8),
             Text(value, style: GoogleFonts.spaceGrotesk(color: color, fontSize: 24, fontWeight: FontWeight.bold)),
             const SizedBox(height: 4),
-            Text(sub, style: TextStyle(color: Colors.white54, fontSize: 11)),
+            Text(sub, style: const TextStyle(color: Colors.white54, fontSize: 11)),
           ],
         ),
       ),
@@ -477,10 +476,10 @@ class _GovDashboardScreenState extends State<GovDashboardScreen> with TickerProv
       decoration: BoxDecoration(
         color: const Color(0xFF0D0D1A),
         borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: const Color(0xFF10B981).withOpacity(0.3)),
+        border: Border.all(color: const Color(0xFF10B981).withValues(alpha: 0.3)),
         boxShadow: [
           BoxShadow(
-            color: const Color(0xFF10B981).withOpacity(0.05),
+            color: const Color(0xFF10B981).withValues(alpha: 0.05),
             blurRadius: 15,
           )
         ],
@@ -499,7 +498,7 @@ class _GovDashboardScreenState extends State<GovDashboardScreen> with TickerProv
                 builder: (_, __) => Container(
                   width: 6, height: 6,
                   decoration: BoxDecoration(
-                    color: const Color(0xFF10B981).withOpacity(0.4 + 0.6 * _pulseController.value),
+                    color: const Color(0xFF10B981).withValues(alpha: 0.4 + 0.6 * _pulseController.value),
                     shape: BoxShape.circle,
                   ),
                 ),
@@ -529,7 +528,7 @@ class _GovDashboardScreenState extends State<GovDashboardScreen> with TickerProv
                         child: Text(
                           log['msg'],
                           style: GoogleFonts.jetBrainsMono(
-                            color: index == 0 ? color : color.withOpacity(0.6),
+                            color: index == 0 ? color : color.withValues(alpha: 0.6),
                             fontSize: 11,
                             fontWeight: index == 0 ? FontWeight.bold : FontWeight.normal,
                           ),
@@ -552,9 +551,9 @@ class _GovDashboardScreenState extends State<GovDashboardScreen> with TickerProv
       decoration: BoxDecoration(
         color: const Color(0xFF0D0D1A),
         borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: const Color(0xFF818CF8).withOpacity(0.3)),
+        border: Border.all(color: const Color(0xFF818CF8).withValues(alpha: 0.3)),
         gradient: LinearGradient(
-          colors: [const Color(0xFF6366F1).withOpacity(0.05), const Color(0xFF0D0D1A)],
+          colors: [const Color(0xFF6366F1).withValues(alpha: 0.05), const Color(0xFF0D0D1A)],
           begin: Alignment.topLeft, end: Alignment.bottomRight,
         ),
       ),
@@ -589,11 +588,11 @@ class _GovDashboardScreenState extends State<GovDashboardScreen> with TickerProv
               ),
               Container(
                 padding: const EdgeInsets.all(12),
-                decoration: BoxDecoration(color: const Color(0xFF10B981).withOpacity(0.1), borderRadius: BorderRadius.circular(12)),
+                decoration: BoxDecoration(color: const Color(0xFF10B981).withValues(alpha: 0.1), borderRadius: BorderRadius.circular(12)),
                 child: Column(
                   children: [
                     Text('${(_goalProgress * 100).toInt()}%', style: GoogleFonts.spaceGrotesk(color: const Color(0xFF10B981), fontSize: 20, fontWeight: FontWeight.bold)),
-                    Text('Aligned', style: TextStyle(color: const Color(0xFF10B981), fontSize: 10, fontWeight: FontWeight.bold)),
+                    const Text('Aligned', style: TextStyle(color: Color(0xFF10B981), fontSize: 10, fontWeight: FontWeight.bold)),
                   ],
                 ),
               )
@@ -605,14 +604,14 @@ class _GovDashboardScreenState extends State<GovDashboardScreen> with TickerProv
             child: LinearProgressIndicator(
               value: _goalProgress,
               minHeight: 8,
-              backgroundColor: Colors.white.withOpacity(0.05),
+              backgroundColor: Colors.white.withValues(alpha: 0.05),
               color: const Color(0xFF6366F1),
             ),
           ),
           const SizedBox(height: 16),
           _glassContainer(
             padding: const EdgeInsets.all(12),
-            color: const Color(0xFF6366F1).withOpacity(0.05),
+            color: const Color(0xFF6366F1).withValues(alpha: 0.05),
             child: Row(
               children: [
                 const Icon(Icons.auto_awesome, color: Color(0xFF818CF8), size: 16),
@@ -637,9 +636,9 @@ class _GovDashboardScreenState extends State<GovDashboardScreen> with TickerProv
       child: Container(
         padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
         decoration: BoxDecoration(
-          color: const Color(0xFF6366F1).withOpacity(0.1),
+          color: const Color(0xFF6366F1).withValues(alpha: 0.1),
           borderRadius: BorderRadius.circular(8),
-          border: Border.all(color: const Color(0xFF6366F1).withOpacity(0.3)),
+          border: Border.all(color: const Color(0xFF6366F1).withValues(alpha: 0.3)),
         ),
         child: Row(
           children: [
@@ -655,9 +654,9 @@ class _GovDashboardScreenState extends State<GovDashboardScreen> with TickerProv
     return Container(
       padding: padding,
       decoration: BoxDecoration(
-        color: color ?? Colors.white.withOpacity(0.03),
+        color: color ?? Colors.white.withValues(alpha: 0.03),
         borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: borderColor ?? Colors.white.withOpacity(0.08)),
+        border: Border.all(color: borderColor ?? Colors.white.withValues(alpha: 0.08)),
       ),
       child: child,
     );
@@ -672,7 +671,7 @@ class _GovDashboardScreenState extends State<GovDashboardScreen> with TickerProv
           begin: Alignment.topLeft, end: Alignment.bottomRight,
         ),
         borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: const Color(0xFF6366F1).withOpacity(0.3)),
+        border: Border.all(color: const Color(0xFF6366F1).withValues(alpha: 0.3)),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -681,7 +680,7 @@ class _GovDashboardScreenState extends State<GovDashboardScreen> with TickerProv
             children: [
               Container(
                 padding: const EdgeInsets.all(10),
-                decoration: BoxDecoration(color: const Color(0xFF6366F1).withOpacity(0.2), borderRadius: BorderRadius.circular(10)),
+                decoration: BoxDecoration(color: const Color(0xFF6366F1).withValues(alpha: 0.2), borderRadius: BorderRadius.circular(10)),
                 child: const Icon(Icons.school_rounded, color: Color(0xFF818CF8)),
               ),
               const SizedBox(width: 16),
@@ -689,7 +688,7 @@ class _GovDashboardScreenState extends State<GovDashboardScreen> with TickerProv
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text('Education-Specific Mode', style: GoogleFonts.spaceGrotesk(color: Colors.white, fontSize: 18, fontWeight: FontWeight.bold)),
-                  Text('Analyze student data for admission, grading, and scholarship bias', style: TextStyle(color: Colors.white60, fontSize: 13)),
+                  const Text('Analyze student data for admission, grading, and scholarship bias', style: TextStyle(color: Colors.white60, fontSize: 13)),
                 ],
               ),
               const Spacer(),
@@ -714,7 +713,7 @@ class _GovDashboardScreenState extends State<GovDashboardScreen> with TickerProv
               const Spacer(),
               Container(
                 padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-                decoration: BoxDecoration(color: const Color(0xFFEF4444).withOpacity(0.15), borderRadius: BorderRadius.circular(8)),
+                decoration: BoxDecoration(color: const Color(0xFFEF4444).withValues(alpha: 0.15), borderRadius: BorderRadius.circular(8)),
                 child: const Text('⚠️ Rural students selected 32% less', style: TextStyle(color: Color(0xFFEF4444), fontSize: 12, fontWeight: FontWeight.bold)),
               )
             ],
@@ -728,9 +727,9 @@ class _GovDashboardScreenState extends State<GovDashboardScreen> with TickerProv
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
       decoration: BoxDecoration(
-        color: const Color(0xFF6366F1).withOpacity(0.1),
+        color: const Color(0xFF6366F1).withValues(alpha: 0.1),
         borderRadius: BorderRadius.circular(8),
-        border: Border.all(color: const Color(0xFF6366F1).withOpacity(0.2)),
+        border: Border.all(color: const Color(0xFF6366F1).withValues(alpha: 0.2)),
       ),
       child: Text(text, style: const TextStyle(color: Color(0xFF818CF8), fontSize: 12)),
     );
@@ -742,7 +741,7 @@ class _GovDashboardScreenState extends State<GovDashboardScreen> with TickerProv
       decoration: BoxDecoration(
         color: const Color(0xFF0D0D1A),
         borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: Colors.white.withOpacity(0.08)),
+        border: Border.all(color: Colors.white.withValues(alpha: 0.08)),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -757,24 +756,24 @@ class _GovDashboardScreenState extends State<GovDashboardScreen> with TickerProv
           const SizedBox(height: 16),
           Container(
             padding: const EdgeInsets.all(12),
-            decoration: BoxDecoration(color: Colors.white.withOpacity(0.05), borderRadius: BorderRadius.circular(8)),
-            child: Column(
+            decoration: BoxDecoration(color: Colors.white.withValues(alpha: 0.05), borderRadius: BorderRadius.circular(8)),
+            child: const Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                const Text('Student #4920: Rejected', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
-                const SizedBox(height: 8),
-                const Text('Why was this student rejected?', style: TextStyle(color: Colors.white54, fontSize: 12)),
-                const SizedBox(height: 4),
+                Text('Student #4920: Rejected', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
+                SizedBox(height: 8),
+                Text('Why was this student rejected?', style: TextStyle(color: Colors.white54, fontSize: 12)),
+                SizedBox(height: 4),
                 Row(
-                  children: const [
+                  children: [
                     Icon(Icons.check_circle_rounded, color: Color(0xFF10B981), size: 14),
                     SizedBox(width: 6),
                     Text('Score below threshold', style: TextStyle(color: Colors.white70, fontSize: 12)),
                   ],
                 ),
-                const SizedBox(height: 4),
+                SizedBox(height: 4),
                 Row(
-                  children: const [
+                  children: [
                     Icon(Icons.warning_rounded, color: Color(0xFFEF4444), size: 14),
                     SizedBox(width: 6),
                     Text('Bias detected in location factor', style: TextStyle(color: Color(0xFFEF4444), fontSize: 12)),
@@ -794,7 +793,7 @@ class _GovDashboardScreenState extends State<GovDashboardScreen> with TickerProv
       decoration: BoxDecoration(
         color: const Color(0xFF0D0D1A),
         borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: Colors.white.withOpacity(0.08)),
+        border: Border.all(color: Colors.white.withValues(alpha: 0.08)),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -809,22 +808,22 @@ class _GovDashboardScreenState extends State<GovDashboardScreen> with TickerProv
           const SizedBox(height: 16),
           Row(
             children: [
-              Expanded(
+              const Expanded(
                 child: Column(
                   children: [
-                    const Icon(Icons.arrow_downward_rounded, color: Color(0xFF10B981)),
-                    const SizedBox(height: 4),
-                    const Text('Bias ↓ 40%', style: TextStyle(color: Color(0xFF10B981), fontWeight: FontWeight.bold, fontSize: 16)),
+                    Icon(Icons.arrow_downward_rounded, color: Color(0xFF10B981)),
+                    SizedBox(height: 4),
+                    Text('Bias ↓ 40%', style: TextStyle(color: Color(0xFF10B981), fontWeight: FontWeight.bold, fontSize: 16)),
                   ],
                 ),
               ),
               Container(width: 1, height: 40, color: Colors.white12),
-              Expanded(
+              const Expanded(
                 child: Column(
                   children: [
-                    const Icon(Icons.arrow_downward_rounded, color: Color(0xFFF59E0B)),
-                    const SizedBox(height: 4),
-                    const Text('Accuracy ↓ 6%', style: TextStyle(color: Color(0xFFF59E0B), fontWeight: FontWeight.bold, fontSize: 16)),
+                    Icon(Icons.arrow_downward_rounded, color: Color(0xFFF59E0B)),
+                    SizedBox(height: 4),
+                    Text('Accuracy ↓ 6%', style: TextStyle(color: Color(0xFFF59E0B), fontWeight: FontWeight.bold, fontSize: 16)),
                   ],
                 ),
               )
@@ -843,7 +842,7 @@ class _GovDashboardScreenState extends State<GovDashboardScreen> with TickerProv
       decoration: BoxDecoration(
         color: const Color(0xFF0D0D1A),
         borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: Colors.white.withOpacity(0.08)),
+        border: Border.all(color: Colors.white.withValues(alpha: 0.08)),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -861,13 +860,13 @@ class _GovDashboardScreenState extends State<GovDashboardScreen> with TickerProv
           const SizedBox(height: 12),
           Container(
             padding: const EdgeInsets.all(12),
-            decoration: BoxDecoration(color: const Color(0xFF8B5CF6).withOpacity(0.1), borderRadius: BorderRadius.circular(8)),
-            child: Column(
+            decoration: BoxDecoration(color: const Color(0xFF8B5CF6).withValues(alpha: 0.1), borderRadius: BorderRadius.circular(8)),
+            child: const Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                const Text('🧠 Gemini Policy Recommendation:', style: TextStyle(color: Color(0xFF818CF8), fontWeight: FontWeight.bold, fontSize: 12)),
-                const SizedBox(height: 4),
-                const Text('• Remove gender from decision pipeline\n• Introduce blind evaluation', style: TextStyle(color: Colors.white70, fontSize: 12, height: 1.5)),
+                Text('🧠 Gemini Policy Recommendation:', style: TextStyle(color: Color(0xFF818CF8), fontWeight: FontWeight.bold, fontSize: 12)),
+                SizedBox(height: 4),
+                Text('• Remove gender from decision pipeline\n• Introduce blind evaluation', style: TextStyle(color: Colors.white70, fontSize: 12, height: 1.5)),
               ],
             ),
           )
@@ -883,7 +882,7 @@ class _GovDashboardScreenState extends State<GovDashboardScreen> with TickerProv
         children: [
           Icon(pass ? Icons.check_circle_rounded : Icons.cancel_rounded, color: pass ? const Color(0xFF10B981) : const Color(0xFFEF4444), size: 16),
           const SizedBox(width: 8),
-          Text(text, style: TextStyle(color: Colors.white70, fontSize: 13)),
+          Text(text, style: const TextStyle(color: Colors.white70, fontSize: 13)),
         ],
       ),
     );
@@ -895,7 +894,7 @@ class _GovDashboardScreenState extends State<GovDashboardScreen> with TickerProv
       decoration: BoxDecoration(
         color: const Color(0xFF0D0D1A),
         borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: Colors.white.withOpacity(0.08)),
+        border: Border.all(color: Colors.white.withValues(alpha: 0.08)),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -908,11 +907,11 @@ class _GovDashboardScreenState extends State<GovDashboardScreen> with TickerProv
             ],
           ),
           const SizedBox(height: 16),
-          Text('Citizens can verify fairness metrics publicly. Raw data is never shown (privacy safe).', style: TextStyle(color: Colors.white60, fontSize: 13, height: 1.5)),
+          const Text('Citizens can verify fairness metrics publicly. Raw data is never shown (privacy safe).', style: TextStyle(color: Colors.white60, fontSize: 13, height: 1.5)),
           const SizedBox(height: 16),
           Row(
             children: [
-              _actionBtn('View Public Portal', Icons.open_in_new_rounded, const Color(0xFF06B6D4).withOpacity(0.2), () {
+              _actionBtn('View Public Portal', Icons.open_in_new_rounded, const Color(0xFF06B6D4).withValues(alpha: 0.2), () {
                 Navigator.push(
                   context,
                   MaterialPageRoute(builder: (_) => const PublicPortalScreen()),
@@ -935,7 +934,7 @@ class _GovDashboardScreenState extends State<GovDashboardScreen> with TickerProv
       decoration: BoxDecoration(
         gradient: const LinearGradient(colors: [Color(0xFF312E81), Color(0xFF1E1B4B)]),
         borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: const Color(0xFF6366F1).withOpacity(0.5)),
+        border: Border.all(color: const Color(0xFF6366F1).withValues(alpha: 0.5)),
       ),
       child: Row(
         children: [
@@ -966,7 +965,7 @@ class _GovDashboardScreenState extends State<GovDashboardScreen> with TickerProv
       decoration: BoxDecoration(
         color: const Color(0xFF0D0D1A),
         borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: const Color(0xFF8B5CF6).withOpacity(0.3)),
+        border: Border.all(color: const Color(0xFF8B5CF6).withValues(alpha: 0.3)),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -979,7 +978,7 @@ class _GovDashboardScreenState extends State<GovDashboardScreen> with TickerProv
             ],
           ),
           const SizedBox(height: 16),
-          Text('Predictive projection showing how the current dataset will likely drift into bias over the next 12 months based on historical application trends.', style: TextStyle(color: Colors.white60, fontSize: 13, height: 1.5)),
+          const Text('Predictive projection showing how the current dataset will likely drift into bias over the next 12 months based on historical application trends.', style: TextStyle(color: Colors.white60, fontSize: 13, height: 1.5)),
           const SizedBox(height: 24),
           Row(
             crossAxisAlignment: CrossAxisAlignment.end,
@@ -994,10 +993,10 @@ class _GovDashboardScreenState extends State<GovDashboardScreen> with TickerProv
               Expanded(
                 child: Container(
                   padding: const EdgeInsets.all(16),
-                  decoration: BoxDecoration(color: const Color(0xFFEF4444).withOpacity(0.1), borderRadius: BorderRadius.circular(12), border: Border.all(color: const Color(0xFFEF4444).withOpacity(0.5))),
-                  child: Column(
+                  decoration: BoxDecoration(color: const Color(0xFFEF4444).withValues(alpha: 0.1), borderRadius: BorderRadius.circular(12), border: Border.all(color: const Color(0xFFEF4444).withValues(alpha: 0.5))),
+                  child: const Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
-                    children: const [
+                    children: [
                       Text('⚠️ Drift Warning', style: TextStyle(color: Color(0xFFEF4444), fontWeight: FontWeight.bold)),
                       SizedBox(height: 4),
                       Text('Model projected to breach 80% bias threshold by December due to compounding location feature skew.', style: TextStyle(color: Colors.white70, fontSize: 12)),
@@ -1041,7 +1040,7 @@ class _GovDashboardScreenState extends State<GovDashboardScreen> with TickerProv
       decoration: BoxDecoration(
         color: const Color(0xFF04040C),
         borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: Colors.white.withOpacity(0.05)),
+        border: Border.all(color: Colors.white.withValues(alpha: 0.05)),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,

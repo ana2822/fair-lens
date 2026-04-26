@@ -36,7 +36,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
     showDialog(
       context: context,
       builder: (_) => _GlassDialog(
-        title: '✏️ Edit Profile',
+        title: '✔️ Edit Profile',
         content: Column(mainAxisSize: MainAxisSize.min, children: [
           _dlgField(nameCtrl, 'Display Name', Icons.person_outline_rounded),
           const SizedBox(height: 16),
@@ -568,7 +568,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
       Switch(
         value: value,
         onChanged: onChanged,
-        activeColor: const Color(0xFF6366F1),
+        activeThumbColor: const Color(0xFF6366F1),
       ),
     ],
   );
