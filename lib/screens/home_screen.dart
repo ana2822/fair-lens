@@ -1,23 +1,16 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
-import 'package:file_picker/file_picker.dart';
-import 'package:csv/csv.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'dart:math' as math;
 import 'dart:ui';
-import '../models/bias_detector.dart';
-import 'analysis_screen.dart';
-import 'face_bias_screen.dart';
-import 'gov_dashboard_screen.dart';
-import 'text_bias_screen.dart';
-import 'simulator_screen.dart';
+import '../widgets/top_nav.dart';
+import '../widgets/radial_particles.dart';
+import '../services/dataset_service.dart';
+
 import 'feature_detail_screen.dart';
 import 'global_compliance_screen.dart';
-import '../services/auth_service.dart';
 import '../services/gemini_service.dart';
-import 'login_screen.dart';
-import 'profile_screen.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -31,6 +24,11 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
   late AnimationController _pulseController;
   late AnimationController _floatController;
   late AnimationController _orbitController;
+  late AnimationController _ring2Controller;
+  late AnimationController _portalPulseController;
+  late AnimationController _colorCycleController;
+  late AnimationController _shimmerController;
+  late Animation<Color?> _glowColorAnimation;
 
   @override
   void initState() {
@@ -44,6 +42,26 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
     _orbitController = AnimationController(
       vsync: this, duration: const Duration(seconds: 20),
     )..repeat();
+    _ring2Controller = AnimationController(
+      vsync: this, duration: const Duration(seconds: 30),
+    )..repeat();
+    _portalPulseController = AnimationController(
+      vsync: this, duration: const Duration(seconds: 4),
+    )..repeat(reverse: true);
+    
+    _colorCycleController = AnimationController(
+      vsync: this, duration: const Duration(seconds: 12),
+    )..repeat();
+    
+    _shimmerController = AnimationController(
+      vsync: this, duration: const Duration(seconds: 4),
+    )..repeat();
+
+    _glowColorAnimation = TweenSequence<Color?>([
+      TweenSequenceItem(weight: 1.0, tween: ColorTween(begin: const Color(0xFF7C3AED), end: const Color(0xFF0EA5E9))), // Violet to Cerulean
+      TweenSequenceItem(weight: 1.0, tween: ColorTween(begin: const Color(0xFF0EA5E9), end: const Color(0xFF2DD4BF))), // Cerulean to Teal
+      TweenSequenceItem(weight: 1.0, tween: ColorTween(begin: const Color(0xFF2DD4BF), end: const Color(0xFF7C3AED))), // Teal back to Violet
+    ]).animate(_colorCycleController);
   }
 
   @override
@@ -51,119 +69,24 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
     _pulseController.dispose();
     _floatController.dispose();
     _orbitController.dispose();
+    _ring2Controller.dispose();
+    _portalPulseController.dispose();
+    _colorCycleController.dispose();
+    _shimmerController.dispose();
     super.dispose();
   }
 
   // ── EXACT SAME LOGIC ────────────────────────────────────────
   Future<void> _pickAndAnalyze() async {
-    setState(() {
-      _isLoading = true;
-      _error = null;
-    });
-
-    try {
-      final result = await FilePicker.platform.pickFiles(
-        type: FileType.custom,
-        allowedExtensions: ['csv'],
-        withData: true,
-      );
-
-      if (result == null) {
-        setState(() => _isLoading = false);
-        return;
-      }
-
-      final file = result.files.first;
-
-    // 🔥 FIXED CSV PARSING
-      final csvString = String.fromCharCodes(file.bytes!);
-
-      final cleanedCsv = csvString
-          .replaceAll('\r\n', '\n')
-          .replaceAll('\r', '\n');
-
-      final rows = const CsvToListConverter(
-        fieldDelimiter: ',',
-        eol: '\n',
-      ).convert(cleanedCsv);
-
-      debugPrint("RAW CSV:");
-      debugPrint(cleanedCsv);
-
-      debugPrint("ROWS LENGTH: ${rows.length}");
-      debugPrint("FIRST ROW: ${rows.isNotEmpty ? rows[0] : 'EMPTY'}");
-
-      // 🔥 REMOVE EMPTY ROWS
-      final validRows = rows.where((r) => r.isNotEmpty).toList();
-
-      // 🔥 DEBUG (optional)
-      debugPrint("Parsed valid rows: ${validRows.length}");
-
-      if (validRows.length < 2) {
-        throw Exception('CSV needs at least 2 valid rows');
-      }
-
-      final headers = validRows.first.map((e) => e.toString()).toList();
-
-      final data = validRows.skip(1).map((row) {
-        final map = <String, dynamic>{};
-        for (int i = 0; i < headers.length; i++) {
-          map[headers[i]] = i < row.length ? row[i].toString() : '';
-        }
-        return map;
-      }).toList();
-
-      final analysisResult = BiasDetector.analyze(data, headers);
-
-      if (!mounted) return;
-
-        if (analysisResult.overallBiasScore > 50) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-              content: const Row(
-                children: [
-                  Icon(Icons.warning_amber_rounded, color: Colors.white),
-                  SizedBox(width: 12),
-                  Expanded(
-                    child: Text(
-                      '⚠️ High risk dataset detected!',
-                      style: TextStyle(
-                        color: Colors.white,
-                        fontWeight: FontWeight.bold,
-                      ),
-                    ),
-                  ),
-                ],
-              ),
-              backgroundColor: const Color(0xFFEF4444),
-              behavior: SnackBarBehavior.floating,
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(12),
-              ),
-              margin: const EdgeInsets.all(16),
-            ),
-          );
-      }
-
-      Navigator.push(
-        context,
-        PageRouteBuilder(
-          pageBuilder: (_, a, b) => AnalysisScreen(
-            result: analysisResult,
-            rawData: data
-                .map((e) => e.map((k, v) => MapEntry(k, v.toString())))
-                .toList(),
-          ),
-          transitionsBuilder: (_, a, b, child) =>
-              FadeTransition(opacity: a, child: child),
-          transitionDuration: const Duration(milliseconds: 400),
-        ),
-      );
-    } catch (e) {
-      setState(() => _error = e.toString());
-    } finally {
-      setState(() => _isLoading = false);
-    }
+    DatasetService.pickAndAnalyze(
+      context,
+      setLoading: (l) {
+        if (mounted) setState(() => _isLoading = l);
+      },
+      setError: (e) {
+        if (mounted) setState(() => _error = e);
+      },
+    );
   }
 
   @override
@@ -199,7 +122,7 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
 
         SafeArea(child: SingleChildScrollView(
           child: Column(children: [
-            _buildNav(),
+            const TopNav(activeItem: 'Home'),
             Padding(
               padding: EdgeInsets.symmetric(horizontal: w > 900 ? 80 : 24),
               child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
@@ -234,287 +157,192 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
     );
   }
 
-  // ── NAV ─────────────────────────────────────────────────────
-  Widget _buildNav() {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 14),
-      decoration: BoxDecoration(
-        color: const Color(0xFF04040C).withValues(alpha: 0.8),
-        border: Border(bottom: BorderSide(color: Colors.white.withValues(alpha: 0.06))),
-      ),
-      child: ClipRect(
-        child: BackdropFilter(
-          filter: ImageFilter.blur(sigmaX: 20, sigmaY: 20),
-          child: Row(children: [
-            // Logo
-            Container(
-              width: 36, height: 36,
-              decoration: BoxDecoration(
-                gradient: const LinearGradient(
-                  colors: [Color(0xFF6366F1), Color(0xFF8B5CF6)],
-                  begin: Alignment.topLeft, end: Alignment.bottomRight,
-                ),
-                borderRadius: BorderRadius.circular(10),
-                boxShadow: [BoxShadow(
-                  color: const Color(0xFF6366F1).withValues(alpha: 0.5),
-                  blurRadius: 16, spreadRadius: 1,
-                )],
-              ),
-              child: const Icon(Icons.lens_blur_rounded, color: Colors.white, size: 20),
-            ),
-            const SizedBox(width: 10),
-            Text('FairLens', style: GoogleFonts.spaceGrotesk(
-              color: Colors.white, fontSize: 18, fontWeight: FontWeight.w800)),
-            // Live badge
-            const SizedBox(width: 10),
-            Container(
-              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
-              decoration: BoxDecoration(
-                color: const Color(0xFF10B981).withValues(alpha: 0.12),
-                borderRadius: BorderRadius.circular(20),
-                border: Border.all(color: const Color(0xFF10B981).withValues(alpha: 0.3)),
-              ),
-              child: Row(mainAxisSize: MainAxisSize.min, children: [
-                _pulseDot(const Color(0xFF10B981)),
-                const SizedBox(width: 5),
-                Text('LIVE', style: GoogleFonts.spaceGrotesk(
-                  color: const Color(0xFF10B981), fontSize: 10, fontWeight: FontWeight.w700,
-                  letterSpacing: 1)),
-              ]),
-            ),
-            const Spacer(),
-            
-            // Responsive Navbar Logic
-            if (MediaQuery.of(context).size.width > 1100) ...[
-              _navBtn('Gov Dashboard', Icons.account_balance_rounded, () => Navigator.push(context, MaterialPageRoute(builder: (_) => const GovDashboardScreen())), true),
-              _navBtn('Text Bias', Icons.document_scanner, () => Navigator.push(context, MaterialPageRoute(builder: (_) => const TextBiasScreen())), true),
-              _navBtn('Simulator', Icons.tune_rounded, () => Navigator.push(context, MaterialPageRoute(builder: (_) => const SimulatorScreen())), true),
-              _navBtn('Face Bias', Icons.face_retouching_natural, () => Navigator.push(context, MaterialPageRoute(builder: (_) => const FaceBiasScreen())), true),
-              _navBtn('Roadmap', Icons.public_rounded, () => Navigator.push(context, MaterialPageRoute(builder: (_) => const GlobalComplianceScreen())), true),
-            ] else if (MediaQuery.of(context).size.width > 750) ...[
-              _navBtn('', Icons.account_balance_rounded, () => Navigator.push(context, MaterialPageRoute(builder: (_) => const GovDashboardScreen())), false),
-              _navBtn('', Icons.document_scanner, () => Navigator.push(context, MaterialPageRoute(builder: (_) => const TextBiasScreen())), false),
-              _navBtn('', Icons.tune_rounded, () => Navigator.push(context, MaterialPageRoute(builder: (_) => const SimulatorScreen())), false),
-              _navBtn('', Icons.face_retouching_natural, () => Navigator.push(context, MaterialPageRoute(builder: (_) => const FaceBiasScreen())), false),
-              _navBtn('', Icons.public_rounded, () => Navigator.push(context, MaterialPageRoute(builder: (_) => const GlobalComplianceScreen())), false),
-            ] else ...[
-              PopupMenuButton<int>(
-                icon: const Icon(Icons.menu_rounded, color: Colors.white, size: 28),
-                color: const Color(0xFF1E1E2C),
-                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                itemBuilder: (context) => [
-                  PopupMenuItem(value: 0, child: Row(children: [const Icon(Icons.account_balance_rounded, color: Colors.white70), const SizedBox(width: 8), Text('Gov Dashboard', style: GoogleFonts.spaceGrotesk(color: Colors.white))])),
-                  PopupMenuItem(value: 1, child: Row(children: [const Icon(Icons.document_scanner, color: Colors.white70), const SizedBox(width: 8), Text('Text Bias', style: GoogleFonts.spaceGrotesk(color: Colors.white))])),
-                  PopupMenuItem(value: 2, child: Row(children: [const Icon(Icons.tune_rounded, color: Colors.white70), const SizedBox(width: 8), Text('Simulator', style: GoogleFonts.spaceGrotesk(color: Colors.white))])),
-                  PopupMenuItem(value: 3, child: Row(children: [const Icon(Icons.face_retouching_natural, color: Colors.white70), const SizedBox(width: 8), Text('Face Bias', style: GoogleFonts.spaceGrotesk(color: Colors.white))])),
-                  PopupMenuItem(value: 4, child: Row(children: [const Icon(Icons.public_rounded, color: Colors.white70), const SizedBox(width: 8), Text('Roadmap', style: GoogleFonts.spaceGrotesk(color: Colors.white))])),
-                ],
-                onSelected: (value) {
-                  if (value == 0) Navigator.push(context, MaterialPageRoute(builder: (_) => const GovDashboardScreen()));
-                  if (value == 1) Navigator.push(context, MaterialPageRoute(builder: (_) => const TextBiasScreen()));
-                  if (value == 2) Navigator.push(context, MaterialPageRoute(builder: (_) => const SimulatorScreen()));
-                  if (value == 3) Navigator.push(context, MaterialPageRoute(builder: (_) => const FaceBiasScreen()));
-                  if (value == 4) Navigator.push(context, MaterialPageRoute(builder: (_) => const GlobalComplianceScreen()));
-                },
-              ),
-            ],
-
-            const SizedBox(width: 8),
-            _buildProfileOption(),
-            const SizedBox(width: 14),
-            
-            if (MediaQuery.of(context).size.width > 600)
-              _glowButton('Upload Dataset', Icons.upload_rounded, _pickAndAnalyze)
-            else
-              IconButton(
-                icon: const Icon(Icons.upload_rounded, color: Color(0xFF8B5CF6), size: 24),
-                onPressed: _pickAndAnalyze,
-              ),
-          ]),
-        ),
-      ),
-    ).animate().fadeIn(duration: 500.ms);
-  }
-
-  Widget _buildProfileOption() {
-    final user = AuthService().currentUser;
-    final isDemo = user == null || user.isAnonymous;
-
-    if (isDemo) {
-      return IconButton(
-        icon: const Icon(Icons.login_rounded, color: Colors.white70, size: 20),
-        onPressed: () {
-          Navigator.push(context, MaterialPageRoute(builder: (_) => const LoginScreen()));
-        },
-        tooltip: 'Login',
-      );
-    }
-
-    return GestureDetector(
-      onTap: () {
-        Navigator.push(context, MaterialPageRoute(builder: (_) => const ProfileScreen()));
-      },
-      child: Container(
-        margin: const EdgeInsets.symmetric(horizontal: 8),
-        width: 32,
-        height: 32,
-        decoration: BoxDecoration(
-          shape: BoxShape.circle,
-          border: Border.all(color: const Color(0xFF6366F1).withValues(alpha: 0.5), width: 1.5),
-          image: user.photoURL != null 
-              ? DecorationImage(image: NetworkImage(user.photoURL!), fit: BoxFit.cover)
-              : null,
-          color: user.photoURL == null ? const Color(0xFF8B5CF6) : null,
-        ),
-        child: user.photoURL == null
-            ? Center(child: Text(user.displayName?.isNotEmpty == true ? user.displayName![0].toUpperCase() : 'U', style: GoogleFonts.spaceGrotesk(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 14)))
-            : null,
-      ),
-    );
-  }
-
-  Widget _navBtn(String label, IconData icon, VoidCallback onTap, bool showText) {
-    bool isHover = false;
-    return StatefulBuilder(
-      builder: (context, setBtnState) {
-        return MouseRegion(
-          onEnter: (_) => setBtnState(() => isHover = true),
-          onExit: (_) => setBtnState(() => isHover = false),
-          child: GestureDetector(
-            onTap: onTap,
-            child: AnimatedContainer(
-              duration: const Duration(milliseconds: 200),
-              padding: EdgeInsets.symmetric(horizontal: showText ? 14 : 10, vertical: 9),
-              margin: const EdgeInsets.only(right: 8),
-              decoration: BoxDecoration(
-                color: isHover ? Colors.white.withValues(alpha: 0.1) : Colors.white.withValues(alpha: 0.04),
-                borderRadius: BorderRadius.circular(9),
-                border: Border.all(color: isHover ? const Color(0xFF818CF8).withValues(alpha: 0.5) : Colors.white.withValues(alpha: 0.08)),
-                boxShadow: isHover ? [BoxShadow(color: const Color(0xFF6366F1).withValues(alpha: 0.2), blurRadius: 12)] : [],
-              ),
-              child: Row(mainAxisSize: MainAxisSize.min, children: [
-                Icon(icon, size: 15, color: isHover ? const Color(0xFF818CF8) : Colors.white70),
-                if (showText) const SizedBox(width: 8),
-                if (showText) Text(label, style: GoogleFonts.spaceGrotesk(
-                  color: isHover ? Colors.white : Colors.white70, 
-                  fontSize: 13, 
-                  fontWeight: isHover ? FontWeight.bold : FontWeight.w500
-                )),
-              ]),
-            ),
-          ),
-        );
-      }
-    );
-  }
-
-
-  Widget _glowButton(String label, IconData icon, VoidCallback onTap) =>
-    GestureDetector(
-      onTap: onTap,
-      child: AnimatedBuilder(
-        animation: _pulseController,
-        builder: (_, __) => Container(
-          padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
-          decoration: BoxDecoration(
-            gradient: const LinearGradient(
-              colors: [Color(0xFF6366F1), Color(0xFF8B5CF6)]),
-            borderRadius: BorderRadius.circular(10),
-            boxShadow: [BoxShadow(
-              color: const Color(0xFF6366F1).withValues(
-                alpha: 0.3 + 0.2 * _pulseController.value),
-              blurRadius: 20 + 10 * _pulseController.value,
-              offset: const Offset(0, 4),
-            )],
-          ),
-          child: Row(mainAxisSize: MainAxisSize.min, children: [
-            Icon(icon, size: 15, color: Colors.white),
-            const SizedBox(width: 7),
-            Text(label, style: GoogleFonts.spaceGrotesk(
-              color: Colors.white, fontSize: 13, fontWeight: FontWeight.w700)),
-          ]),
-        ),
-      ),
-    );
-
-  // ── HERO ─────────────────────────────────────────────────────
+// ── HERO ─────────────────────────────────────────────────────
   Widget _buildHero() {
-    return Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-      // Badge
-      Container(
-        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 7),
-        decoration: BoxDecoration(
-          color: const Color(0xFF6366F1).withValues(alpha: 0.1),
-          borderRadius: BorderRadius.circular(30),
-          border: Border.all(color: const Color(0xFF6366F1).withValues(alpha: 0.25)),
-        ),
-        child: Row(mainAxisSize: MainAxisSize.min, children: [
-          _pulseDot(const Color(0xFF10B981)),
-          const SizedBox(width: 8),
-          Text('Google Solution Challenge 2026 • AI Fairness Platform',
-            style: GoogleFonts.spaceGrotesk(
-              color: const Color(0xFF818CF8), fontSize: 12, fontWeight: FontWeight.w500)),
-        ]),
-      ).animate().fadeIn(delay: 100.ms).slideX(begin: -0.05),
+    final screenWidth = MediaQuery.of(context).size.width;
+    final portalSize = math.min(screenWidth * 0.85, 900.0);
 
-      const SizedBox(height: 28),
+    return SizedBox(
+      width: double.infinity,
+      height: portalSize * 0.9 + 200, // Explicit height for containment
+      child: Stack(
+        alignment: Alignment.topCenter,
+        clipBehavior: Clip.hardEdge,
+        children: [
+          // ── Background Effects (Grid, Orb, Particles) ──
+          Positioned(
+            top: 140, // Below the badge
+            child: SizedBox(
+              width: portalSize,
+              height: portalSize,
+              child: Stack(
+                alignment: Alignment.center,
+                children: [
+                  // 1. Background Grid (Multi-concentric dashed rings)
+                  AnimatedBuilder(
+                    animation: _orbitController,
+                    builder: (_, __) => Transform.rotate(
+                      angle: _orbitController.value * 2 * math.pi * 0.2, // Very slow internal rotation
+                      child: CustomPaint(
+                        size: Size(portalSize, portalSize),
+                        painter: _MultiConcentricGridPainter(
+                          color: Colors.white.withValues(alpha: 0.08),
+                        ),
+                      ),
+                    ),
+                  ),
 
-      // Big headline
-      AnimatedBuilder(
-        animation: _floatController,
-        builder: (_, child) => Transform.translate(
-          offset: Offset(0, math.sin(_floatController.value * math.pi) * 3),
-          child: child,
-        ),
-        child: ShaderMask(
-          shaderCallback: (b) => const LinearGradient(
-            colors: [Color(0xFFFFFFFF), Color(0xFFE2E8F0), Color(0xFF818CF8)],
-            begin: Alignment.topLeft, end: Alignment.bottomRight,
-          ).createShader(b),
-          child: Text(
-            'Detect Hidden Bias.\nBuild Fair AI Systems.',
-            style: GoogleFonts.spaceGrotesk(
-              color: Colors.white, fontSize: 58,
-              fontWeight: FontWeight.w900, height: 1.08, letterSpacing: -2,
+                  // 2. Contained Particle Stream
+                  RadialParticles(
+                    colorAnimation: _glowColorAnimation,
+                    maxRadius: portalSize * 0.48, // Fade out before edge
+                  ),
+
+                  // 3. Central Glow Orb (Nebula)
+                  AnimatedBuilder(
+                    animation: Listenable.merge([_portalPulseController, _colorCycleController]),
+                    builder: (_, __) {
+                      final t = _portalPulseController.value;
+                      final baseColor = _glowColorAnimation.value ?? const Color(0xFF7C3AED);
+                      
+                      return Container(
+                        width: portalSize * 0.45,
+                        height: portalSize * 0.45,
+                        decoration: BoxDecoration(
+                          shape: BoxShape.circle,
+                          gradient: RadialGradient(
+                            colors: [
+                              baseColor.withValues(alpha: 0.6 + 0.2 * t),
+                              baseColor.withValues(alpha: 0.15 + 0.1 * t),
+                              Colors.transparent,
+                            ],
+                            stops: const [0.0, 0.5, 1.0],
+                          ),
+                        ),
+                      );
+                    },
+                  ),
+                ],
+              ),
             ),
           ),
-        ),
-      ).animate().fadeIn(delay: 200.ms).slideY(begin: 0.06),
 
-      const SizedBox(height: 22),
+          // ── Foreground Content ──
+          Positioned.fill(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.center, 
+              children: [
+                // Badge
+                Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 7),
+                  decoration: BoxDecoration(
+                    color: const Color(0xFF6366F1).withValues(alpha: 0.1),
+                    borderRadius: BorderRadius.circular(30),
+                    border: Border.all(color: const Color(0xFF6366F1).withValues(alpha: 0.25)),
+                  ),
+                  child: Row(mainAxisSize: MainAxisSize.min, children: [
+                    _pulseDot(const Color(0xFF10B981)),
+                    const SizedBox(width: 8),
+                    Text('Google Solution Challenge 2026 • AI Fairness Platform',
+                      style: GoogleFonts.spaceGrotesk(
+                        color: const Color(0xFF818CF8), fontSize: 12, fontWeight: FontWeight.w500)),
+                  ]),
+                ).animate().fadeIn(delay: 100.ms).slideY(begin: -0.05),
 
-      Text(
-        'Upload any dataset — hiring, loans, medical or HR.\nFairLens uses Gemini AI to detect algorithmic bias, map legal\nrisks and generate a debiased dataset instantly.',
-        style: GoogleFonts.spaceGrotesk(
-          color: Colors.white.withValues(alpha: 0.48),
-          fontSize: 16, height: 1.7,
-        ),
-      ).animate().fadeIn(delay: 300.ms),
+                const SizedBox(height: 100), // Space to center text over the orb
 
-      const SizedBox(height: 36),
+                // Text Shimmer H1
+                AnimatedBuilder(
+                  animation: Listenable.merge([_shimmerController, _colorCycleController, _floatController]),
+                  builder: (_, child) {
+                    final shimmerColor = _glowColorAnimation.value ?? const Color(0xFF7C3AED);
+                    final shimmerPos = _shimmerController.value; // 0 to 1
+                    
+                    return Transform.translate(
+                      offset: Offset(0, math.sin(_floatController.value * math.pi) * 4),
+                      child: ShaderMask(
+                        shaderCallback: (b) => LinearGradient(
+                          colors: [
+                            const Color(0xFFE8E8F0),
+                            const Color(0xFFFFFFFF),
+                            shimmerColor.withValues(alpha: 0.9), // Shimmer highlight
+                            const Color(0xFFFFFFFF),
+                            const Color(0xFFC7C7D4),
+                          ],
+                          stops: [
+                            0.0,
+                            math.max(0.0, shimmerPos - 0.2),
+                            shimmerPos,
+                            math.min(1.0, shimmerPos + 0.2),
+                            1.0,
+                          ],
+                          begin: Alignment.topLeft,
+                          end: Alignment.bottomRight,
+                        ).createShader(b),
+                        child: child,
+                      ),
+                    );
+                  },
+                  child: Text(
+                    'Detect Hidden\nBias. Build\nFair AI.',
+                    textAlign: TextAlign.center,
+                    style: GoogleFonts.spaceGrotesk(
+                      color: Colors.white,
+                      fontSize: screenWidth > 900 ? 96 : (screenWidth > 600 ? 72 : 52),
+                      fontWeight: FontWeight.w900,
+                      height: 1.0,
+                      letterSpacing: -3,
+                    ),
+                  ),
+                ).animate().fadeIn(delay: 200.ms),
 
-      Wrap(
-        spacing: 14, 
-        runSpacing: 14,
-        children: [
-          _heroCTA('Upload Dataset', Icons.cloud_upload_outlined, true, _pickAndAnalyze),
-          _heroCTA('Try Sample Dataset', Icons.play_circle_outline_rounded, false, _pickAndAnalyze),
-        ]
-      ).animate().fadeIn(delay: 420.ms),
+                const SizedBox(height: 48),
 
-      const SizedBox(height: 36),
+                // Sub-headline
+                ConstrainedBox(
+                  constraints: BoxConstraints(maxWidth: math.min(screenWidth * 0.72, 600)),
+                  child: Text(
+                    'Upload any dataset — hiring, loans, medical or HR. FairLens uses Gemini AI to detect algorithmic bias, map legal risks and generate a debiased dataset instantly.',
+                    textAlign: TextAlign.center,
+                    style: GoogleFonts.spaceGrotesk(
+                      color: Colors.white.withValues(alpha: 0.48),
+                      fontSize: 16, height: 1.7,
+                    ),
+                  ),
+                ).animate().fadeIn(delay: 300.ms),
 
-      // Trust row
-      Wrap(
-        spacing: 10,
-        runSpacing: 10,
-        children: [
-          _trustChip(Icons.verified_rounded, 'GDPR Article 22', const Color(0xFF10B981)),
-          _trustChip(Icons.gavel_rounded, 'Indian Law Mapped', const Color(0xFF6366F1)),
-          _trustChip(Icons.psychology_rounded, 'Gemini Powered', const Color(0xFF8B5CF6)),
-        ]
-      ).animate().fadeIn(delay: 500.ms),
-    ]);
+                const SizedBox(height: 36),
+
+                // CTAs
+                Wrap(
+                  spacing: 14,
+                  runSpacing: 14,
+                  alignment: WrapAlignment.center,
+                  children: [
+                    _heroCTA('Upload Dataset', Icons.cloud_upload_outlined, true, _pickAndAnalyze),
+                    _heroCTA('Try Sample Dataset', Icons.play_circle_outline_rounded, false, _pickAndAnalyze),
+                  ]
+                ).animate().fadeIn(delay: 420.ms),
+
+                const SizedBox(height: 36),
+
+                // Trust chips
+                Wrap(
+                  spacing: 10,
+                  runSpacing: 10,
+                  alignment: WrapAlignment.center,
+                  children: [
+                    _trustChip(Icons.verified_rounded, 'GDPR Article 22', const Color(0xFF10B981)),
+                    _trustChip(Icons.gavel_rounded, 'Indian Law Mapped', const Color(0xFF6366F1)),
+                    _trustChip(Icons.psychology_rounded, 'Gemini Powered', const Color(0xFF8B5CF6)),
+                  ]
+                ).animate().fadeIn(delay: 500.ms),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
   }
 
   Widget _heroCTA(String label, IconData icon, bool primary, VoidCallback onTap) =>
@@ -1238,6 +1066,10 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
           _footerLink('Docs'),
           _footerLink('About'),
           _footerLink('Privacy'),
+          GestureDetector(
+            onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const GlobalComplianceScreen())),
+            child: _footerLink('Roadmap')
+          ),
         ]);
         return isWide
           ? Row(mainAxisAlignment: MainAxisAlignment.spaceBetween, children: [Flexible(child: brand), links])
@@ -2046,3 +1878,104 @@ class _GridPainter extends CustomPainter {
   @override
   bool shouldRepaint(_) => false;
 }
+
+// ══════════════════════════════════════════════════════════════
+//  DASHED RING PAINTER — Black Hole portal rings
+//  Draws a dashed ellipse at the full size of the widget.
+//  dashLength / gapLength mirror SVG stroke-dasharray.
+// ══════════════════════════════════════════════════════════════
+class _DashedRingPainter extends CustomPainter {
+  final double dashLength;
+  final double gapLength;
+  final Color color;
+  final double strokeWidth;
+
+  const _DashedRingPainter({
+    required this.dashLength,
+    required this.gapLength,
+    required this.color,
+    required this.strokeWidth,
+  });
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    final rx = size.width / 2;
+    final ry = size.height / 2;
+    final center = Offset(rx, ry);
+    final circumference = 2 * math.pi * ((3 * (rx + ry) - math.sqrt((3 * rx + ry) * (rx + 3 * ry))) / 10 + math.sqrt(rx * ry));
+    final totalPattern = dashLength + gapLength;
+    final steps = (circumference / totalPattern).floor();
+
+    final paint = Paint()
+      ..color = color
+      ..strokeWidth = strokeWidth
+      ..strokeCap = StrokeCap.round
+      ..style = PaintingStyle.stroke;
+
+    for (int i = 0; i < steps; i++) {
+      final startAngle = (i * totalPattern / circumference) * 2 * math.pi;
+      final sweepAngle = (dashLength / circumference) * 2 * math.pi;
+      canvas.drawArc(
+        Rect.fromCenter(center: center, width: size.width, height: size.height),
+        startAngle,
+        sweepAngle,
+        false,
+        paint,
+      );
+    }
+  }
+
+  @override
+  bool shouldRepaint(_DashedRingPainter old) =>
+      old.dashLength != dashLength ||
+      old.gapLength != gapLength ||
+      old.color != color ||
+      old.strokeWidth != strokeWidth;
+}
+
+// ══════════════════════════════════════════════════════════════
+//  MULTI-CONCENTRIC GRID PAINTER
+// ══════════════════════════════════════════════════════════════
+class _MultiConcentricGridPainter extends CustomPainter {
+  final Color color;
+
+  _MultiConcentricGridPainter({required this.color});
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    final center = Offset(size.width / 2, size.height / 2);
+    final paint = Paint()
+      ..color = color
+      ..style = PaintingStyle.stroke
+      ..strokeWidth = 1.0;
+
+    final maxRadius = size.width / 2;
+    const spacing = 30.0; // Distance between rings
+    
+    for (double r = spacing; r <= maxRadius; r += spacing) {
+      final circumference = 2 * math.pi * r;
+      // Dash length and gap vary slightly based on radius to look dynamic
+      final dashLength = 3.0 + (r * 0.015); 
+      final gapLength = 6.0 + (r * 0.03);
+      final steps = (circumference / (dashLength + gapLength)).floor();
+      if (steps <= 0) continue;
+      final actualPatternLength = circumference / steps;
+
+      for (int i = 0; i < steps; i++) {
+        final startAngle = (i * actualPatternLength / circumference) * 2 * math.pi;
+        final sweepAngle = (dashLength / circumference) * 2 * math.pi;
+        canvas.drawArc(
+          Rect.fromCircle(center: center, radius: r),
+          startAngle,
+          sweepAngle,
+          false,
+          paint,
+        );
+      }
+    }
+  }
+
+  @override
+  bool shouldRepaint(covariant _MultiConcentricGridPainter old) => color != old.color;
+}
+

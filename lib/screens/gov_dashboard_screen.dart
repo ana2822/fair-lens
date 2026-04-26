@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import 'package:google_fonts/google_fonts.dart';
+import '../widgets/top_nav.dart';
 import 'dart:async';
 import 'dart:math' as math;
 import '../models/bias_detector.dart';
@@ -152,64 +153,64 @@ class _GovDashboardScreenState extends State<GovDashboardScreen> with TickerProv
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: const Color(0xFF04040C),
-      appBar: AppBar(
-        backgroundColor: const Color(0xFF0D0D1A),
-        elevation: 1,
-        title: Row(
-          children: [
-            const Icon(Icons.account_balance_rounded, color: Color(0xFF818CF8)),
-            const SizedBox(width: 10),
-            Text('Government Command Center', style: GoogleFonts.spaceGrotesk(
-              color: Colors.white, fontWeight: FontWeight.bold, fontSize: 18,
-            )),
-          ],
-        ),
-        actions: [
-          _roleBadge('👨‍💼 Admin', () {
-            AlertService().trigger('Switched to Admin View. Full system access granted.', AlertType.info);
-          }),
-          const SizedBox(width: 8),
-          _roleBadge('🕵️ Auditor', () {
-            AlertService().trigger('Switched to Auditor Mode. High-resolution logs enabled.', AlertType.info);
-          }),
-          const SizedBox(width: 8),
-          Container(
-            margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
-            padding: const EdgeInsets.symmetric(horizontal: 12),
-            decoration: BoxDecoration(
-              color: const Color(0xFF10B981).withValues(alpha: 0.15),
-              borderRadius: BorderRadius.circular(20),
-              border: Border.all(color: const Color(0xFF10B981).withValues(alpha: 0.3)),
-            ),
-            child: Row(
-              children: [
-                AnimatedBuilder(
-                  animation: _pulseController,
-                  builder: (_, __) => Container(
-                    width: 8, height: 8,
-                    decoration: BoxDecoration(
-                      color: const Color(0xFF10B981).withValues(alpha: 0.5 + 0.5 * _pulseController.value),
-                      shape: BoxShape.circle,
-                      boxShadow: [
-                        BoxShadow(
-                          color: const Color(0xFF10B981).withValues(alpha: 0.5 * _pulseController.value),
-                          blurRadius: 6,
-                        )
-                      ]
-                    ),
-                  ),
-                ),
-                const SizedBox(width: 8),
-                Text('LIVE', style: GoogleFonts.spaceGrotesk(
-                  color: const Color(0xFF10B981), fontSize: 10, fontWeight: FontWeight.bold, letterSpacing: 1
-                )),
-              ],
-            ),
-          )
-        ],
-      ),
+      appBar: const TopNav(activeItem: 'Dashboard'),
       body: Column(
         children: [
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+            color: const Color(0xFF0D0D1A),
+            child: Row(
+              children: [
+                const Icon(Icons.account_balance_rounded, color: Color(0xFF818CF8)),
+                const SizedBox(width: 10),
+                Text('Government Command Center', style: GoogleFonts.spaceGrotesk(
+                  color: Colors.white, fontWeight: FontWeight.bold, fontSize: 18,
+                )),
+                const Spacer(),
+                _roleBadge('👨‍💼 Admin', () {
+                  AlertService().trigger('Switched to Admin View. Full system access granted.', AlertType.info);
+                }),
+                const SizedBox(width: 8),
+                _roleBadge('🕵️ Auditor', () {
+                  AlertService().trigger('Switched to Auditor Mode. High-resolution logs enabled.', AlertType.info);
+                }),
+                const SizedBox(width: 8),
+                Container(
+                  margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+                  padding: const EdgeInsets.symmetric(horizontal: 12),
+                  decoration: BoxDecoration(
+                    color: const Color(0xFF10B981).withValues(alpha: 0.15),
+                    borderRadius: BorderRadius.circular(20),
+                    border: Border.all(color: const Color(0xFF10B981).withValues(alpha: 0.3)),
+                  ),
+                  child: Row(
+                    children: [
+                      AnimatedBuilder(
+                        animation: _pulseController,
+                        builder: (_, __) => Container(
+                          width: 8, height: 8,
+                          decoration: BoxDecoration(
+                            color: const Color(0xFF10B981).withValues(alpha: 0.5 + 0.5 * _pulseController.value),
+                            shape: BoxShape.circle,
+                            boxShadow: [
+                              BoxShadow(
+                                color: const Color(0xFF10B981).withValues(alpha: 0.5 * _pulseController.value),
+                                blurRadius: 6,
+                              )
+                            ]
+                          ),
+                        ),
+                      ),
+                      const SizedBox(width: 8),
+                      Text('LIVE', style: GoogleFonts.spaceGrotesk(
+                        color: const Color(0xFF10B981), fontSize: 10, fontWeight: FontWeight.bold, letterSpacing: 1
+                      )),
+                    ],
+                  ),
+                )
+              ],
+            ),
+          ),
           // 🚨 GLOBAL AI ALERT SYSTEM (Sticky Top Banner)
           _buildStickyAlert(),
           

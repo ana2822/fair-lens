@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import 'package:google_fonts/google_fonts.dart';
+import '../widgets/top_nav.dart';
 import '../services/gemini_service.dart';
 
 class TextBiasScreen extends StatefulWidget {
@@ -118,29 +119,39 @@ class _TextBiasScreenState extends State<TextBiasScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: const Color(0xFF04040C),
-      appBar: AppBar(
-        backgroundColor: Colors.transparent,
-        elevation: 0,
-        title: Text('NLP Semantic Guard', style: GoogleFonts.spaceGrotesk(color: Colors.white, fontWeight: FontWeight.bold)),
-        leading: IconButton(icon: const Icon(Icons.arrow_back_ios_new_rounded, color: Colors.white, size: 20), onPressed: () => Navigator.pop(context)),
-        actions: [
-          IconButton(onPressed: () {}, icon: const Icon(Icons.history_rounded, color: Colors.white70)),
-          IconButton(onPressed: () {}, icon: const Icon(Icons.settings_outlined, color: Colors.white70)),
-          const SizedBox(width: 8),
-        ],
-      ),
-      body: SingleChildScrollView(
-        padding: const EdgeInsets.all(24),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            _buildInputSection(),
+      appBar: const TopNav(activeItem: 'Tools'),
+      body: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+            child: Row(
+              children: [
+                IconButton(icon: const Icon(Icons.arrow_back_ios_new_rounded, color: Colors.white, size: 20), onPressed: () => Navigator.pop(context)),
+                Text('NLP Semantic Guard', style: GoogleFonts.spaceGrotesk(color: Colors.white, fontWeight: FontWeight.bold)),
+                const Spacer(),
+                IconButton(onPressed: () {}, icon: const Icon(Icons.history_rounded, color: Colors.white70)),
+                IconButton(onPressed: () {}, icon: const Icon(Icons.settings_outlined, color: Colors.white70)),
+                const SizedBox(width: 8),
+              ],
+            ),
+          ),
+          Expanded(
+            child: SingleChildScrollView(
+              padding: const EdgeInsets.all(24),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  _buildInputSection(),
             if (_showResults) ...[
               const SizedBox(height: 32),
               _buildResultsSection(),
             ]
           ],
         ),
+      ),
+          ),
+        ],
       ),
     );
   }

@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import 'package:google_fonts/google_fonts.dart';
+import '../widgets/top_nav.dart';
 import 'dart:math' as math;
 
 class SimulatorScreen extends StatefulWidget {
@@ -70,36 +71,46 @@ class _SimulatorScreenState extends State<SimulatorScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: const Color(0xFF04040C),
-      appBar: AppBar(
-        backgroundColor: Colors.transparent,
-        elevation: 0,
-        title: Text('Fairness Pareto Simulator', style: GoogleFonts.spaceGrotesk(color: Colors.white, fontWeight: FontWeight.bold)),
-        leading: IconButton(icon: const Icon(Icons.arrow_back_ios_new_rounded, color: Colors.white, size: 20), onPressed: () => Navigator.pop(context)),
-        actions: [
-          _statusBadge(_isSimulating ? 'SIMULATING' : 'IDLE', _isSimulating ? const Color(0xFF10B981) : Colors.white24),
-          const SizedBox(width: 16),
-        ],
-      ),
-      body: SingleChildScrollView(
-        padding: const EdgeInsets.all(24),
-        child: Column(
-          children: [
-            _buildScenarioSelector(),
-            const SizedBox(height: 24),
-            _buildMainControls(),
-            const SizedBox(height: 24),
-            Row(
-              crossAxisAlignment: CrossAxisAlignment.start,
+      appBar: const TopNav(activeItem: 'Tools'),
+      body: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+            child: Row(
               children: [
-                Expanded(flex: 3, child: _buildVisualizer()),
-                const SizedBox(width: 24),
-                Expanded(flex: 2, child: _buildDecisionLog()),
+                IconButton(icon: const Icon(Icons.arrow_back_ios_new_rounded, color: Colors.white, size: 20), onPressed: () => Navigator.pop(context)),
+                Text('Fairness Pareto Simulator', style: GoogleFonts.spaceGrotesk(color: Colors.white, fontWeight: FontWeight.bold)),
+                const Spacer(),
+                _statusBadge(_isSimulating ? 'SIMULATING' : 'IDLE', _isSimulating ? const Color(0xFF10B981) : Colors.white24),
+                const SizedBox(width: 16),
               ],
             ),
-            const SizedBox(height: 32),
-            _buildSafetyGating(),
-          ],
-        ),
+          ),
+          Expanded(
+            child: SingleChildScrollView(
+              padding: const EdgeInsets.all(24),
+              child: Column(
+                children: [
+                  _buildScenarioSelector(),
+                  const SizedBox(height: 24),
+                  _buildMainControls(),
+                  const SizedBox(height: 24),
+                  Row(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Expanded(flex: 3, child: _buildVisualizer()),
+                      const SizedBox(width: 24),
+                      Expanded(flex: 2, child: _buildDecisionLog()),
+                    ],
+                  ),
+                  const SizedBox(height: 32),
+                  _buildSafetyGating(),
+                ],
+              ),
+            ),
+          ),
+        ],
       ),
     );
   }
