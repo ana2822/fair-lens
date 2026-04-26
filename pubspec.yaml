@@ -52,10 +52,3 @@ flutter:
   assets:
     - assets/
     - .env
-  fonts:
-    - family: FairLensEmoji
-      fonts:
-        - asset: assets/fonts/SegoeUIEmoji.ttf
-    - family: FairLensSymbols
-      fonts:
-        - asset: assets/fonts/SegoeUISymbol.ttf
