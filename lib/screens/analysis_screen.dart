@@ -210,7 +210,7 @@ class _AnalysisScreenState extends State<AnalysisScreen> with TickerProviderStat
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             _bomRow('Asset Name', 'FairLens Audit Engine'),
-            _bomRow('Model Version', 'Gemini 3.1 Flash (Deep Research)'),
+            _bomRow('Model Version', 'Gemini 2.5 Flash'),
             _bomRow('Fairness Library', 'Fairlearn 0.10.0 / Scikit-learn 1.4'),
             _bomRow('Training Data', 'Synthetic + Human Feedback (RLHF)'),
             _bomRow('Primary Metrics', 'Disparate Impact, Stat. Parity'),
@@ -1022,10 +1022,21 @@ class _AnalysisScreenState extends State<AnalysisScreen> with TickerProviderStat
   Widget _noIssuesCard() => Container(
     padding: const EdgeInsets.all(20),
     decoration: BoxDecoration(color: const Color(0xFF0D0D1A), borderRadius: BorderRadius.circular(14), border: Border.all(color: const Color(0xFF10B981).withValues(alpha: 0.3))),
-    child: const Row(children: [
-      Icon(Icons.check_circle, color: Color(0xFF10B981), size: 32),
-      SizedBox(width: 12),
-      Expanded(child: Text('No significant bias detected! Your dataset appears fair.', style: TextStyle(color: Colors.white, fontSize: 15))),
+    child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+      const Row(children: [
+        Icon(Icons.check_circle, color: Color(0xFF10B981), size: 32),
+        SizedBox(width: 12),
+        Expanded(child: Text('No significant bias detected!', style: TextStyle(color: Colors.white, fontSize: 15, fontWeight: FontWeight.bold))),
+      ]),
+      const SizedBox(height: 12),
+      const Text(
+        'This could mean:\n'
+        '• Your dataset is genuinely fair ✅\n'
+        '• No sensitive columns (gender, race, age, etc.) were found in this CSV\n'
+        '• All detected columns had only one unique value\n\n'
+        'Tip: Make sure your CSV has columns like "gender", "age", "race", "income", "education" for bias detection to work.',
+        style: TextStyle(color: Colors.white54, fontSize: 13, height: 1.6),
+      ),
     ]),
   );
 

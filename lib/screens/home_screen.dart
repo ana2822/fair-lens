@@ -785,7 +785,7 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
         'Gemini AI Insights',
         'Get plain-English explanations written by Gemini — what the bias means and how it affects people.',
         ['Executive summary', 'Legal risk', 'Action steps'],
-        'Powered by Gemini 1.5 Flash',
+        'Powered by Gemini 2.5 Flash',
       ),
       (
         const Color(0xFF10B981),
@@ -990,7 +990,7 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
         '03',
         'Gemini Explains',
         'Gemini AI writes a plain-English executive report — what the bias means, who it affects and which laws are violated.',
-        'Powered by Gemini 1.5'
+        'Powered by Gemini 2.5 Flash'
       ),
       (
         const Color(0xFF10B981),

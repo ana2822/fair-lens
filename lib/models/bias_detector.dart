@@ -394,7 +394,9 @@ class BiasDetector {
   String? _detectOutcomeColumn(List<String> columns) {
     for (final col in columns) {
       final lower = col.toLowerCase();
-      if (_outcomeKeywords.any((k) => lower.contains(k))) return col;
+      // Use exact match to avoid false positives like 'workclass' matching 'class'
+      // or 'salary' matching 'y'. Falls back to contains only for longer keywords (5+ chars).
+      if (_outcomeKeywords.any((k) => k.length >= 5 ? lower.contains(k) : lower == k)) return col;
     }
     return null;
   }
@@ -448,6 +450,15 @@ class BiasDetector {
 
     if (valueCounts.length < 2) return null;
 
+    // Skip high cardinality columns (e.g. raw age with 70+ values, ZIP codes)
+    // They produce meaningless per-group stats and slow down the report
+    if (valueCounts.length > 30) return null;
+
+    // Remove 'Unknown' (missing values) from analysis — don't show in report
+    valueCounts.remove('Unknown');
+    positiveOutcomes.remove('Unknown');
+    if (valueCounts.length < 2) return null;
+
     final total = data.length;
     final Map<String, double> distribution = {};
     for (final entry in valueCounts.entries) {
@@ -459,7 +470,9 @@ class BiasDetector {
     for (final entry in valueCounts.entries) {
       final pos = positiveOutcomes[entry.key] ?? 0;
       groupRates[entry.key] =
-          outcomeCol != null ? pos / entry.value : distribution[entry.key]!;
+          (outcomeCol != null && positiveOutcomes.isNotEmpty)
+              ? pos / entry.value
+              : distribution[entry.key]!;
     }
 
     double biasScore = 0.0;
