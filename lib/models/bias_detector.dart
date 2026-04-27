@@ -189,7 +189,7 @@ typedef AnalysisResult = AnalysisReport;
 class BiasDetector {
   static const List<String> _sensitiveKeywords = [
     'gender', 'sex', 'age', 'race', 'ethnicity', 'religion',
-    'nationality', 'caste', 'disability', 'marital', 'income',
+    'nationality', 'caste', 'disability', 'marital',
     'zip', 'pincode', 'region', 'state', 'location', 'education',
     'community', 'tribe', 'colour', 'color', 'skin',
   ];
@@ -198,6 +198,7 @@ class BiasDetector {
     'hired', 'approved', 'accepted', 'selected', 'promoted',
     'loan', 'result', 'outcome', 'decision', 'status', 'label',
     'target', 'class', 'y', 'output',
+    'income', 'salary', 'wage',
   ];
 
   static bool isSensitiveColumn(String col) {
@@ -227,7 +228,9 @@ class BiasDetector {
     final strData = data
         .map((row) => row.map((k, v) => MapEntry(k, v.toString())))
         .toList();
-    final name = headers.isNotEmpty ? headers.first : 'dataset';
+    // Fix 4: headers.first is a column name (e.g. 'age'), not a dataset name.
+    // Fall back to 'Unnamed Dataset' so the report title is always meaningful.
+    final name = 'Unnamed Dataset';
     return BiasDetector()._run(name, strData);
   }
 
@@ -249,11 +252,13 @@ class BiasDetector {
     List<String> anonymized = [];
 
     if (method == 'remove') {
+      // Fix 3: record removed columns once, not once per row — prevents
+      // data.length × highBias.length duplicates before the toSet() call.
+      removed = highBias.toList();
       fixedData = data.map((row) {
         final m = Map<String, String>.from(row);
         for (final col in highBias) {
           m.remove(col);
-          removed.add(col);
         }
         return m;
       }).toList();
@@ -307,16 +312,26 @@ class BiasDetector {
     return 'REDACTED';
   }
 
+  // Columns that are numeric encodings of other sensitive columns — skip to avoid double-counting
+  static const List<String> _numericDuplicates = [
+    'education.num', 'education_num', 'educationnum',
+  ];
+
   AnalysisReport _run(String datasetName, List<Map<String, String>> data) {
     if (data.isEmpty) throw Exception('Dataset is empty');
 
     final columns = data.first.keys.toList();
-    final sensitiveColumns = columns.where(isSensitiveColumn).toList();
+    final sensitiveColumns = columns
+        .where(isSensitiveColumn)
+        .where((col) => !_numericDuplicates.contains(col.toLowerCase()))
+        .toList();
     final outcomeColumn = _detectOutcomeColumn(columns);
     final datasetType = _detectDatasetType(columns);
 
     final biasResults = <BiasResult>[];
     for (final col in sensitiveColumns) {
+      // Don't analyse the outcome column as a sensitive feature
+      if (col == outcomeColumn) continue;
       final result = _analyzeColumn(data, col, outcomeColumn);
       if (result != null) biasResults.add(result);
     }
@@ -392,11 +407,24 @@ class BiasDetector {
   }
 
   String? _detectOutcomeColumn(List<String> columns) {
+    // Sort keywords longest-first so specific terms (e.g. 'income', 'salary')
+    // are matched before short tokens (e.g. 'y', 'class').
+    final sortedKeywords = [..._outcomeKeywords]
+      ..sort((a, b) => b.length.compareTo(a.length));
+
     for (final col in columns) {
+      // Never treat a sensitive column as the outcome column.
+      // e.g. 'marital.status' would match 'status' without this guard.
+      if (isSensitiveColumn(col)) continue;
+
       final lower = col.toLowerCase();
-      // Use exact match to avoid false positives like 'workclass' matching 'class'
-      // or 'salary' matching 'y'. Falls back to contains only for longer keywords (5+ chars).
-      if (_outcomeKeywords.any((k) => k.length >= 5 ? lower.contains(k) : lower == k)) return col;
+
+      // Use EXACT column-name match for short keywords (<=5 chars, e.g. 'y',
+      // 'loan', 'class', 'wage') to prevent 'workclass' matching 'class'.
+      // Use contains only for longer keywords (>=6 chars, e.g. 'income',
+      // 'salary', 'approved') where substring match is safe.
+      if (sortedKeywords.any(
+          (k) => k.length >= 6 ? lower.contains(k) : lower == k)) return col;
     }
     return null;
   }
@@ -441,7 +469,12 @@ class BiasDetector {
             outcome == 'true' ||
             outcome == 'hired' ||
             outcome == 'approved' ||
-            outcome == 'accepted';
+            outcome == 'accepted' ||
+            outcome == 'high' ||
+            outcome == 'pass' ||
+            outcome == 'granted' ||
+            outcome == 'selected' ||
+            outcome.startsWith('>');
         if (isPositive) {
           positiveOutcomes[val] = (positiveOutcomes[val] ?? 0) + 1;
         }

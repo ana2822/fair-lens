@@ -27,7 +27,20 @@ class FairLensApp extends StatelessWidget {
     return MaterialApp(
       title: 'FairLens — AI Governance Platform',
       debugShowCheckedModeBanner: false,
+      themeMode: ThemeMode.dark,
+      darkTheme: ThemeData(
+        brightness: Brightness.dark,
+        scaffoldBackgroundColor: const Color(0xFF04040C),
+        colorScheme: ColorScheme.fromSeed(
+          seedColor: const Color(0xFF4F46E5),
+          brightness: Brightness.dark,
+        ),
+        textTheme: GoogleFonts.interTextTheme(ThemeData.dark().textTheme),
+        useMaterial3: true,
+      ),
       theme: ThemeData(
+        brightness: Brightness.dark,
+        scaffoldBackgroundColor: const Color(0xFF04040C),
         colorScheme: ColorScheme.fromSeed(
           seedColor: const Color(0xFF4F46E5),
           brightness: Brightness.dark,
