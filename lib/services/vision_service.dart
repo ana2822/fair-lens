@@ -96,7 +96,7 @@ class VisionService {
   // ── Replace with your actual Firebase project function URL ─────────────────
   // Format: https://us-central1-YOUR-PROJECT-ID.cloudfunctions.net/visionProxy
   static const String _functionUrl =
-      'https://us-central1-fairlens-b0ef3.cloudfunctions.net/visionProxy';
+      'https://visionproxy-3kxegvpgfa-uc.a.run.app';
 
   // Always true now — key is on the server, not the client
   static bool get hasApiKey => true;

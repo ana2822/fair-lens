@@ -1,6 +1,9 @@
-const functions = require("firebase-functions");
+const { onRequest } = require("firebase-functions/v2/https");
+const { defineSecret } = require("firebase-functions/params");
 const fetch = require("node-fetch");
 
+const GEMINI_KEY = defineSecret("GEMINI_KEY");
+const VISION_KEY = defineSecret("VISION_KEY");
 // ─── CORS helper ─────────────────────────────────────────────────────────────
 function setCors(res) {
   res.set("Access-Control-Allow-Origin", "*");
@@ -9,11 +12,11 @@ function setCors(res) {
 }
 
 // ─── GEMINI: Main analysis + chat ────────────────────────────────────────────
-exports.geminiProxy = functions.https.onRequest(async (req, res) => {
+exports.geminiProxy = onRequest({ secrets: [GEMINI_KEY] }, async (req, res) => {
   setCors(res);
   if (req.method === "OPTIONS") return res.status(204).send("");
 
-  const apiKey = functions.config().gemini.key;
+  const apiKey = GEMINI_KEY.value();
   if (!apiKey) return res.status(500).json({ error: "Gemini key not configured" });
 
   // req.body should contain: { model, contents, generationConfig, system_instruction? }
@@ -43,11 +46,11 @@ exports.geminiProxy = functions.https.onRequest(async (req, res) => {
 });
 
 // ─── VISION: Face detection ───────────────────────────────────────────────────
-exports.visionProxy = functions.https.onRequest(async (req, res) => {
+exports.visionProxy = onRequest({ secrets: [VISION_KEY] }, async (req, res) => {
   setCors(res);
   if (req.method === "OPTIONS") return res.status(204).send("");
 
-  const apiKey = functions.config().vision.key;
+  const apiKey = VISION_KEY.value();
   if (!apiKey) return res.status(500).json({ error: "Vision key not configured" });
 
   // req.body should contain: { image: "<base64 string>" }
